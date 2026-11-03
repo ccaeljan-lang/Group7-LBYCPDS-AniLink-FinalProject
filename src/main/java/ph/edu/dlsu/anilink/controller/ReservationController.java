@@ -6,6 +6,7 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -18,10 +19,12 @@ import ph.edu.dlsu.anilink.model.Route;
 import ph.edu.dlsu.anilink.model.Trip;
 import ph.edu.dlsu.anilink.model.User;
 import ph.edu.dlsu.anilink.service.BookingValidationService;
+import ph.edu.dlsu.anilink.service.QRService;
 import ph.edu.dlsu.anilink.service.SupabaseService;
-import ph.edu.dlsu.anilink.util.QRCodeGenerator;
 import ph.edu.dlsu.anilink.util.UserSession;
 import ph.edu.dlsu.anilink.util.ViewNavigator;
+
+import java.awt.image.BufferedImage;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -36,7 +39,7 @@ import java.util.UUID;
  * to asynchronously fetch real-time routing and schedule data. Upon reservation submission,
  * it validates the booking request via {@link BookingValidationService}, posts the reservation
  * to the database, updates seat availability, and generates a unique QR code boarding pass
- * using {@link QRCodeGenerator}. It also handles navigation to other passenger-centric
+ * using {@link QRService}. It also handles navigation to other passenger-centric
  * views using the {@link ViewNavigator}.
  * </p>
  */
@@ -47,6 +50,7 @@ public class ReservationController {
     private final UserSession userSession;
     private final ViewNavigator viewNavigator;
     private final BookingValidationService bookingValidationService;
+    private final QRService qrService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @FXML private Label userNameLabel;
@@ -68,11 +72,13 @@ public class ReservationController {
     public ReservationController(SupabaseService supabaseService,
                                  UserSession userSession,
                                  ViewNavigator viewNavigator,
-                                 BookingValidationService bookingValidationService) {
+                                 BookingValidationService bookingValidationService,
+                                 QRService qrService) {
         this.supabaseService = supabaseService;
         this.userSession = userSession;
         this.viewNavigator = viewNavigator;
         this.bookingValidationService = bookingValidationService;
+        this.qrService = qrService;
     }
 
     @FXML
@@ -247,7 +253,8 @@ public class ReservationController {
                 currentSeatsTaken = updatedSeats;
 
                 // 3. Generate QR Code image
-                return QRCodeGenerator.generateQRCodeImage(qrPayload, 250, 250);
+                BufferedImage bufferedImage = qrService.generateQRCodeImage(qrPayload, 250, 250);
+                return bufferedImage != null ? SwingFXUtils.toFXImage(bufferedImage, null) : null;
             }
         };
 
