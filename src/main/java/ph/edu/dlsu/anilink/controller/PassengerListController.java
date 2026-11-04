@@ -123,7 +123,7 @@ public class PassengerListController {
                         long passengerId = passengerNode.path("id").asLong();
                         String name = passengerNode.path("name").asText("Unknown");
                         String email = passengerNode.path("email").asText("N/A");
-                        String category = passengerNode.path("category").asText("STUDENT");
+                        String category = passengerNode.path("category").asText("PASSENGER");
 
                         String displayText = String.format("%d. #%d | %s (%s) — [%s] | Status: %s",
                                 count++, passengerId, name, email, category, status.toUpperCase());

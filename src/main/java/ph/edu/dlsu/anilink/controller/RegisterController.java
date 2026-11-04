@@ -51,7 +51,7 @@ public class RegisterController {
     @FXML
     private void initialize() {
         categoryComboBox.setItems(FXCollections.observableArrayList(
-                "STUDENT", "ADMIN", "DRIVER"
+                "STUDENT / FACULTY", "ADMIN", "DRIVER"
         ));
     }
 
@@ -79,7 +79,7 @@ public class RegisterController {
         } else if ("DRIVER".equals(selection)) {
             dbRole = "DRIVER";
         } else {
-            dbRole = "PASSENGER"; // STUDENT defaults to PASSENGER
+            dbRole = "PASSENGER"; // STUDENT/FACULTY defaults to PASSENGER
         }
 
         try {

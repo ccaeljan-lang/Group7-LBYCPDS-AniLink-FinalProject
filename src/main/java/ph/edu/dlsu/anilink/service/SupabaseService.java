@@ -224,7 +224,7 @@ public class SupabaseService {
 
         // Map the extra detail to the correct column so findUserByEmail doesn't crash later
         if ("PASSENGER".equalsIgnoreCase(role)) {
-            payload.put("category", extraDetail); // e.g., "STUDENT"
+            payload.put("category", "PASSENGER"); // Students and faculty have the same category
         } else if ("DRIVER".equalsIgnoreCase(role)) {
             payload.put("license_number", "PENDING-" + System.currentTimeMillis()); // Default placeholder license
         } else if ("ADMINISTRATOR".equalsIgnoreCase(role)) {
