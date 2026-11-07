@@ -296,8 +296,11 @@ public class SupabaseService {
 
 
     public String getSchedulesByRoute(Long routeId) {
+
         return restClient.get()
-                .uri("/departure_schedules?route_id=eq." + routeId + "&select=*,routes(*)")
+                .uri("/departure_schedules?route_id=eq."
+                        + routeId
+                        + "&select=*,route:routes(*)")
                 .retrieve()
                 .body(String.class);
     }
