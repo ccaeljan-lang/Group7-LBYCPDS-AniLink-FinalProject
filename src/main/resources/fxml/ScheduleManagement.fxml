@@ -14,72 +14,217 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane prefHeight="650.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ph.edu.dlsu.anilink.controller.ScheduleManagementController">
-    <stylesheets><URL value="@../css/main.css" /></stylesheets>
+<BorderPane prefHeight="650.0" prefWidth="1000.0"
+            xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="ph.edu.dlsu.anilink.controller.ScheduleManagementController">
+
+    <stylesheets>
+        <URL value="@../css/main.css" />
+    </stylesheets>
 
     <top>
-        <HBox alignment="CENTER_LEFT" prefHeight="60.0" spacing="20.0" style="-fx-background-color: #0d5c36; -fx-padding: 10 25;" styleClass="top-nav">
-            <ImageView fitHeight="28.0" preserveRatio="true"><image><Image url="@../images/nologotitle.png" /></image></ImageView>
+        <HBox alignment="CENTER_LEFT"
+              prefHeight="60.0"
+              spacing="20.0"
+              style="-fx-background-color: #0d5c36; -fx-padding: 10 25;"
+              styleClass="top-nav">
+
+            <ImageView fitHeight="28.0" preserveRatio="true">
+                <image>
+                    <Image url="@../images/nologotitle.png" />
+                </image>
+            </ImageView>
+
             <Region HBox.hgrow="ALWAYS" />
-            <Label fx:id="adminNameLabel" style="-fx-text-fill: #F8FAFC; -fx-font-size: 14px; -fx-font-weight: bold;" text="Welcome, Admin" />
-            <Label style="-fx-text-fill: #FFFFFF; -fx-font-size: 18px;" text="🛡️" />
+
+            <Label fx:id="adminNameLabel"
+                   style="-fx-text-fill: #F8FAFC; -fx-font-size: 14px; -fx-font-weight: bold;"
+                   text="Welcome, Admin" />
+
+            <Label style="-fx-text-fill: #FFFFFF; -fx-font-size: 18px;"
+                   text="🛡️" />
         </HBox>
     </top>
 
+    <!-- EXISTING: Sidebar -->
     <left>
-        <VBox prefWidth="220.0" spacing="8.0" style="-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-width: 0 1 0 0;" styleClass="sidebar-white">
-            <padding><Insets bottom="20.0" left="15.0" right="15.0" top="20.0" /></padding>
-            <Button onAction="#handleDashboard" prefHeight="40.0" prefWidth="190.0" styleClass="sidebar-btn" text="Dashboard" />
-            <Button onAction="#handleRouteManagement" prefHeight="40.0" prefWidth="190.0" styleClass="sidebar-btn" text="Route Management" />
-            <Button onAction="#handleScheduleManagement" prefHeight="40.0" prefWidth="190.0" styleClass="sidebar-btn, sidebar-btn-active" text="Schedule Management" />
-            <Button onAction="#handleTripManagement" prefHeight="40.0" prefWidth="190.0" styleClass="sidebar-btn" text="Trip Management" />
+        <VBox prefWidth="220.0"
+              spacing="8.0"
+              style="-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-width: 0 1 0 0;"
+              styleClass="sidebar-white">
+
+            <padding>
+                <Insets bottom="20.0" left="15.0"
+                        right="15.0" top="20.0" />
+            </padding>
+
+            <Button onAction="#handleDashboard"
+                    prefHeight="40.0"
+                    prefWidth="190.0"
+                    styleClass="sidebar-btn"
+                    text="Dashboard" />
+
+            <Button onAction="#handleRouteManagement"
+                    prefHeight="40.0"
+                    prefWidth="190.0"
+                    styleClass="sidebar-btn"
+                    text="Route Management" />
+
+            <Button onAction="#handleScheduleManagement"
+                    prefHeight="40.0"
+                    prefWidth="190.0"
+                    styleClass="sidebar-btn, sidebar-btn-active"
+                    text="Schedule Management" />
+
+            <Button onAction="#handleTripManagement"
+                    prefHeight="40.0"
+                    prefWidth="190.0"
+                    styleClass="sidebar-btn"
+                    text="Trip Management" />
+
             <Region VBox.vgrow="ALWAYS" />
-            <Button onAction="#handleLogout" prefHeight="40.0" prefWidth="190.0" style="-fx-background-color: #FEF2F2; -fx-text-fill: #DC2626; -fx-border-color: #FECACA; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-font-weight: bold; -fx-cursor: hand;" styleClass="sidebar-btn" text="Logout" />
+
+            <Button onAction="#handleLogout"
+                    prefHeight="40.0"
+                    prefWidth="190.0"
+                    style="-fx-background-color: #FEF2F2; -fx-text-fill: #DC2626; -fx-border-color: #FECACA; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-font-weight: bold; -fx-cursor: hand;"
+                    styleClass="sidebar-btn"
+                    text="Logout" />
         </VBox>
     </left>
 
     <center>
-        <VBox alignment="TOP_CENTER" spacing="25.0" style="-fx-background-color: #F8FAFC;">
-            <padding><Insets bottom="30.0" left="40.0" right="40.0" top="30.0" /></padding>
+        <VBox alignment="TOP_CENTER"
+              spacing="25.0"
+              style="-fx-background-color: #F8FAFC;">
 
-            <VBox alignment="CENTER_LEFT" spacing="5.0" prefWidth="1000.0">
-                <Label style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;" text="Schedule Management" />
-                <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B;" text="Create and assign departure times for active routes" />
+            <padding>
+                <Insets bottom="30.0" left="40.0"
+                        right="40.0" top="30.0" />
+            </padding>
+
+            <VBox alignment="CENTER_LEFT"
+                  spacing="5.0"
+                  prefWidth="1000.0">
+
+                <Label style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;"
+                       text="Schedule Management" />
+
+                <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B;"
+                       text="Create and assign departure times for active routes" />
             </VBox>
 
             <HBox spacing="30.0" alignment="TOP_CENTER">
-                <VBox spacing="20.0" prefWidth="350.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 8, 0, 0, 4);">
-                    <padding><Insets bottom="30.0" left="25.0" right="25.0" top="30.0" /></padding>
-                    <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;" text="Add Departure Schedule" />
+
+                <VBox spacing="20.0"
+                      prefWidth="350.0"
+                      style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 8, 0, 0, 4);">
+
+                    <padding>
+                        <Insets bottom="30.0" left="25.0"
+                                right="25.0" top="30.0" />
+                    </padding>
+
+                    <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;"
+                           text="Add Departure Schedule" />
 
                     <VBox spacing="6.0">
-                        <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;" text="Target Route" />
-                        <ComboBox fx:id="routeComboBox" prefHeight="40.0" prefWidth="300.0" promptText="Select a route" onAction="#handleRouteSelection" style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
+
+                        <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;"
+                               text="Target Route" />
+
+                        <ComboBox fx:id="routeComboBox"
+                                  prefHeight="40.0"
+                                  prefWidth="300.0"
+                                  promptText="Select a route"
+                                  onAction="#handleRouteSelection"
+                                  style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
                     </VBox>
+
                     <VBox spacing="6.0">
-                        <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;" text="Departure Time (24h)" />
-                        <TextField fx:id="departureTimeField" prefHeight="40.0" promptText="e.g., 08:30 or 17:00" style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
+
+                        <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;"
+                               text="Departure Time (24h)" />
+
+                        <ComboBox fx:id="departureTimeComboBox"
+                                  editable="true"
+                                  prefHeight="40.0"
+                                  prefWidth="300.0"
+                                  promptText="Choose or type HH:mm"
+                                  style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
                     </VBox>
+
                     <VBox spacing="6.0">
-                        <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;" text="Shuttle Capacity" />
-                        <TextField fx:id="capacityField" prefHeight="40.0" promptText="e.g., 40" style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
+
+                        <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;"
+                               text="Shuttle Capacity" />
+
+                        <TextField fx:id="capacityField"
+                                   prefHeight="40.0"
+                                   promptText="e.g., 40"
+                                   style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
                     </VBox>
 
                     <Region prefHeight="10.0" />
-                    <Button onAction="#handleAddSchedule" prefHeight="45.0" prefWidth="300.0" style="-fx-background-color: #0d5c36; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;" text="Create Schedule" />
-                    <Label fx:id="statusLabel" alignment="CENTER" prefWidth="300.0" style="-fx-font-size: 13px; -fx-text-fill: #16A34A; -fx-font-weight: bold;" wrapText="true" />
+
+                    <Button onAction="#handleAddSchedule"
+                            prefHeight="45.0"
+                            prefWidth="300.0"
+                            style="-fx-background-color: #0d5c36; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;"
+                            text="Create Schedule" />
+
+                    <Label fx:id="statusLabel"
+                           alignment="CENTER"
+                           prefWidth="300.0"
+                           style="-fx-font-size: 13px; -fx-text-fill: #16A34A; -fx-font-weight: bold;"
+                           wrapText="true" />
+
                 </VBox>
 
-                <VBox spacing="15.0" HBox.hgrow="ALWAYS" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 8, 0, 0, 4);">
-                    <padding><Insets bottom="25.0" left="25.0" right="25.0" top="25.0" /></padding>
+                <VBox spacing="15.0"
+                      HBox.hgrow="ALWAYS"
+                      style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 8, 0, 0, 4);">
+
+                    <padding>
+                        <Insets bottom="25.0" left="25.0"
+                                right="25.0" top="25.0" />
+                    </padding>
+
                     <HBox alignment="CENTER_LEFT">
-                        <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;" text="Active Schedules" />
+
+                        <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;"
+                               text="Active Schedules" />
+
                         <Region HBox.hgrow="ALWAYS" />
-                        <Button onAction="#handleDeleteSchedule" prefHeight="35.0" style="-fx-background-color: #FEF2F2; -fx-text-fill: #DC2626; -fx-border-color: #FECACA; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-cursor: hand;" text="Delete Selected" />
+
+                        <Button onAction="#handleDeleteSchedule"
+                                prefHeight="35.0"
+                                style="-fx-background-color: #FEF2F2; -fx-text-fill: #DC2626; -fx-border-color: #FECACA; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-cursor: hand;"
+                                text="Delete Selected" />
                     </HBox>
-                    <ListView fx:id="scheduleListView" VBox.vgrow="ALWAYS" style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; -fx-font-size: 14px;" />
+
+                    <VBox spacing="6.0">
+
+                        <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;"
+                               text="Select Existing Schedule (Earliest First)" />
+
+                        <ComboBox fx:id="existingScheduleComboBox"
+                                  onAction="#handleScheduleDropdownSelection"
+                                  maxWidth="1.7976931348623157E308"
+                                  prefHeight="40.0"
+                                  promptText="Choose a schedule"
+                                  style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
+
+                    </VBox>
+
+                    <ListView fx:id="scheduleListView"
+                              VBox.vgrow="ALWAYS"
+                              style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px; -fx-font-size: 14px;" />
+
                 </VBox>
             </HBox>
         </VBox>
     </center>
+
 </BorderPane>

@@ -2,7 +2,7 @@ package ph.edu.dlsu.anilink.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
@@ -23,8 +23,8 @@ import java.time.format.DateTimeFormatter;
  * </p>
  */
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class DepartureSchedule {
-
     @JsonProperty("id")
     private Long scheduleId;
 
