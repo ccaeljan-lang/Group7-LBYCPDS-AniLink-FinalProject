@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import ph.edu.dlsu.anilink.model.Reservation;
 import ph.edu.dlsu.anilink.model.Trip;
+import ph.edu.dlsu.anilink.model.TripFullException;
 import ph.edu.dlsu.anilink.model.User;
+import ph.edu.dlsu.anilink.model.WaitingList;
 
 import java.util.List;
 import java.util.UUID;
@@ -29,13 +31,16 @@ public class ReservationService {
 
     private final SupabaseService supabaseService;
     private final BookingValidationService bookingValidationService;
+    private final WaitingListService waitingListService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ReservationService(
             SupabaseService supabaseService,
-            BookingValidationService bookingValidationService) {
+            BookingValidationService bookingValidationService,
+            WaitingListService waitingListService) {
         this.supabaseService = supabaseService;
         this.bookingValidationService = bookingValidationService;
+        this.waitingListService = waitingListService;
     }
 
     public boolean canBook(User user, Trip trip) {
@@ -61,6 +66,9 @@ public class ReservationService {
 
     public Reservation createReservation(User user, Trip trip) {
         if (!canBook(user, trip)) {
+            if (trip != null && trip.isFull()) {
+                throw new TripFullException("This trip is fully booked. You can join the waiting list.");
+            }
             throw new IllegalStateException(getBookingError(user, trip));
         }
 
@@ -97,5 +105,32 @@ public class ReservationService {
             e.printStackTrace();
             throw new RuntimeException("Unable to save reservation to Supabase: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Adds the passenger to the waiting list for a trip when the trip is full.
+     *
+     * @return true if the passenger joined the waiting list, false if already on it
+     */
+    public boolean joinWaitingList(User user, Trip trip) {
+        if (user == null || trip == null) {
+            return false;
+        }
+        return waitingListService.joinWaitlist(
+                trip.getTripId(),
+                user.getUserId(),
+                user.getName()
+        );
+    }
+
+    /**
+     * Returns the waiting list position (1-based) for a passenger on a trip,
+     * or -1 if not on the list.
+     */
+    public int getWaitingListPosition(User user, Trip trip) {
+        if (user == null || trip == null) {
+            return -1;
+        }
+        return waitingListService.getPosition(trip.getTripId(), user.getUserId());
     }
 }
