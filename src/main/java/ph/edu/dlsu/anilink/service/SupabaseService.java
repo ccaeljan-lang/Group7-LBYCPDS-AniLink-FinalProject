@@ -570,4 +570,46 @@ public class SupabaseService {
                 .retrieve()
                 .body(String.class);
     }
+
+    // --- Waiting List ---
+
+    public String getWaitingListByTrip(Long tripId) {
+        return restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/waiting_lists")
+                        .queryParam("trip_id", "eq." + tripId)
+                        .queryParam("order", "joined_at.asc")
+                        .queryParam("select", "*,passenger:users(name,email)")
+                        .build())
+                .retrieve()
+                .body(String.class);
+    }
+
+    public String createWaitingListEntry(Long tripId, Long passengerId) {
+        return restClient.post()
+                .uri("/waiting_lists")
+                .header("Prefer", "return=representation")
+                .body(java.util.Map.of(
+                        "trip_id", tripId,
+                        "passenger_id", passengerId,
+                        "status", "WAITING"
+                ))
+                .retrieve()
+                .body(String.class);
+    }
+
+    public void updateWaitingListStatus(Long id, String status) {
+        restClient.patch()
+                .uri("/waiting_lists?id=eq." + id)
+                .body(java.util.Map.of("status", status))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    public void deleteWaitingListEntry(Long id) {
+        restClient.delete()
+                .uri("/waiting_lists?id=eq." + id)
+                .retrieve()
+                .toBodilessEntity();
+    }
 }
