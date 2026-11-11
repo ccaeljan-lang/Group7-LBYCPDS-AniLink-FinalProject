@@ -284,23 +284,50 @@ public class ReservationController {
     private void showJoinWaitlistDialog(Trip trip) {
         User currentUser = userSession.getCurrentUser();
         if (currentUser == null) {
-            showMessage("Please log in to join the waiting list.", "#DC2626");
+            showMessage("Please log in to manage the waiting list.", "#DC2626");
             return;
         }
 
         int existingPosition = reservationService.getWaitingListPosition(currentUser, trip);
+
         if (existingPosition != -1) {
-            showMessage("You are already #" + existingPosition + " on the waiting list.", "#0284C7");
+            // Already on the waiting list — offer to cancel
+            Alert cancelAlert = new Alert(Alert.AlertType.CONFIRMATION);
+            cancelAlert.setTitle("Cancel Waiting List");
+            cancelAlert.setHeaderText("You are #" + existingPosition + " on the waiting list.");
+            cancelAlert.setContentText("Would you like to remove yourself from the waiting list for this trip?");
+
+            Optional<ButtonType> cancelResult = cancelAlert.showAndWait();
+            if (cancelResult.isPresent() && cancelResult.get() == ButtonType.OK) {
+                Task<Boolean> cancelTask = new Task<>() {
+                    @Override
+                    protected Boolean call() throws Exception {
+                        return reservationService.cancelWaitlist(currentUser, trip);
+                    }
+                };
+                cancelTask.setOnSucceeded(e -> {
+                    if (cancelTask.getValue()) {
+                        showMessage("You have been removed from the waiting list.", "#16A34A");
+                    } else {
+                        showMessage("Failed to cancel waiting list entry.", "#DC2626");
+                    }
+                });
+                cancelTask.setOnFailed(e -> {
+                    showMessage("Failed to cancel waiting list entry.", "#DC2626");
+                });
+                new Thread(cancelTask).start();
+            }
             return;
         }
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Trip Fully Booked");
-        alert.setHeaderText("This trip is fully booked.");
-        alert.setContentText("Would you like to join the waiting list? You'll be notified if a seat opens up.");
+        // Not on the waiting list — offer to join
+        Alert joinAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        joinAlert.setTitle("Trip Fully Booked");
+        joinAlert.setHeaderText("This trip is fully booked.");
+        joinAlert.setContentText("Would you like to join the waiting list? You'll be notified if a seat opens up.");
 
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
+        Optional<ButtonType> joinResult = joinAlert.showAndWait();
+        if (joinResult.isPresent() && joinResult.get() == ButtonType.OK) {
             Task<Boolean> waitlistTask = new Task<>() {
                 @Override
                 protected Boolean call() throws Exception {

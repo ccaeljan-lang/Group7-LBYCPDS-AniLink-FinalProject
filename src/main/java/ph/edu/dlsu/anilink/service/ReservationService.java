@@ -133,4 +133,16 @@ public class ReservationService {
         }
         return waitingListService.getPosition(trip.getTripId(), user.getUserId());
     }
+
+    /**
+     * Removes the passenger from the waiting list for a trip.
+     *
+     * @return true if the passenger was removed, false if not on the list
+     */
+    public boolean cancelWaitlist(User user, Trip trip) {
+        if (user == null || trip == null) {
+            return false;
+        }
+        return waitingListService.cancelWaitlist(trip.getTripId(), user.getUserId());
+    }
 }
