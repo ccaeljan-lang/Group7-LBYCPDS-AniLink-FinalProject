@@ -7,6 +7,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ph.edu.dlsu.anilink.model.Administrator;
+import ph.edu.dlsu.anilink.model.Driver;
+import ph.edu.dlsu.anilink.model.Passenger;
 import ph.edu.dlsu.anilink.model.Reservation;
 import ph.edu.dlsu.anilink.model.Trip;
 import ph.edu.dlsu.anilink.model.User;
@@ -118,7 +121,7 @@ public class ReservationController {
                             User passenger;
                             switch (role.toUpperCase()) {
                                 case "DRIVER":
-                                    passenger = new ph.edu.dlsu.anilink.model.Driver(
+                                    passenger = new Driver(
                                             u.path("id").asLong(),
                                             u.path("name").asText(),
                                             u.path("email").asText(),
@@ -128,7 +131,7 @@ public class ReservationController {
                                     break;
                                 case "ADMINISTRATOR":
                                 case "ADMIN":
-                                    passenger = new ph.edu.dlsu.anilink.model.Administrator(
+                                    passenger = new Administrator(
                                             u.path("id").asLong(),
                                             u.path("name").asText(),
                                             u.path("email").asText(),
@@ -137,7 +140,7 @@ public class ReservationController {
                                     );
                                     break;
                                 default:
-                                    passenger = new ph.edu.dlsu.anilink.model.Passenger(
+                                    passenger = new Passenger(
                                             u.path("id").asLong(),
                                             u.path("name").asText(),
                                             u.path("email").asText(),
