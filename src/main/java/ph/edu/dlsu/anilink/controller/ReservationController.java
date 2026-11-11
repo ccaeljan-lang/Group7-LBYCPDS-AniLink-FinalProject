@@ -9,6 +9,7 @@ import javafx.fxml.FXML;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
@@ -17,9 +18,12 @@ import javafx.scene.image.Image;
 import org.springframework.stereotype.Controller;
 import ph.edu.dlsu.anilink.model.Route;
 import ph.edu.dlsu.anilink.model.Trip;
+import ph.edu.dlsu.anilink.model.TripFullException;
 import ph.edu.dlsu.anilink.model.User;
+import ph.edu.dlsu.anilink.model.WaitingList;
 import ph.edu.dlsu.anilink.service.BookingValidationService;
 import ph.edu.dlsu.anilink.service.QRService;
+import ph.edu.dlsu.anilink.service.ReservationService;
 import ph.edu.dlsu.anilink.service.SupabaseService;
 import ph.edu.dlsu.anilink.util.UserSession;
 import ph.edu.dlsu.anilink.util.ViewNavigator;
@@ -29,6 +33,7 @@ import java.awt.image.BufferedImage;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -50,6 +55,7 @@ public class ReservationController {
     private final UserSession userSession;
     private final ViewNavigator viewNavigator;
     private final BookingValidationService bookingValidationService;
+    private final ReservationService reservationService;
     private final QRService qrService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -73,11 +79,13 @@ public class ReservationController {
                                  UserSession userSession,
                                  ViewNavigator viewNavigator,
                                  BookingValidationService bookingValidationService,
+                                 ReservationService reservationService,
                                  QRService qrService) {
         this.supabaseService = supabaseService;
         this.userSession = userSession;
         this.viewNavigator = viewNavigator;
         this.bookingValidationService = bookingValidationService;
+        this.reservationService = reservationService;
         this.qrService = qrService;
     }
 
@@ -226,46 +234,29 @@ public class ReservationController {
         currentTrip.setCapacity(currentCapacity);
         currentTrip.setSeatsTaken(currentSeatsTaken);
 
-        BookingValidationService.ValidationResult result =
-                bookingValidationService.validateBooking(currentUser, currentTrip);
-
-        if (!result.isValid()) {
-            showMessage(result.getMessage(), "#DC2626");
-            return;
-        }
-
         reserveButton.setDisable(true);
         showMessage("Processing reservation...", "#0284C7");
 
-        // Unique payload matching your `qr_payload` column constraint
-        String qrPayload = "ANILINK-RES-" + UUID.randomUUID().toString();
-
         // Execute Reservation asynchronously
-        Task<Image> task = new Task<>() {
+        Task<Reservation> task = new Task<>() {
             @Override
-            protected Image call() throws Exception {
-                // 1. Post to Supabase reservations table
-                supabaseService.postReservation(currentUser.getUserId(), selectedTripId, qrPayload);
-
-                // 2. Increment seats taken
-                int updatedSeats = currentSeatsTaken + 1;
-                supabaseService.updateTripSeatsTaken(selectedTripId, updatedSeats);
-                currentSeatsTaken = updatedSeats;
-
-                // 3. Generate QR Code image
-                BufferedImage bufferedImage = qrService.generateQRCodeImage(qrPayload, 250, 250);
-                return bufferedImage != null ? SwingFXUtils.toFXImage(bufferedImage, null) : null;
+            protected Reservation call() throws Exception {
+                return reservationService.createReservation(currentUser, currentTrip);
             }
         };
 
         task.setOnSucceeded(e -> {
             reserveButton.setDisable(false);
-            availableSeats.setText("Available Seats: " + Math.max(0, currentCapacity - currentSeatsTaken));
+            Reservation reservation = task.getValue();
+            availableSeats.setText("Available Seats: " + Math.max(0, currentCapacity - currentSeatsTaken - 1));
             showMessage("Reservation successful!", "#16A34A");
 
+            // Generate QR Code image from the reservation payload
+            BufferedImage bufferedImage = qrService.generateQRCodeImage(reservation.getQrPayload(), 250, 250);
+            Image qrImage = bufferedImage != null ? SwingFXUtils.toFXImage(bufferedImage, null) : null;
+
             // Pop up the generated QR code dialog
-            Image qrImage = task.getValue();
-            showQRCodePopup(qrImage, qrPayload);
+            showQRCodePopup(qrImage, reservation.getQrPayload());
 
             // Clear selected schedule
             scheduleSelection.setValue(null);
@@ -273,13 +264,62 @@ public class ReservationController {
 
         task.setOnFailed(e -> {
             reserveButton.setDisable(false);
-            if (task.getException() != null) {
-                task.getException().printStackTrace();
+            Throwable ex = task.getException();
+            if (ex instanceof TripFullException) {
+                showJoinWaitlistDialog(currentTrip);
+            } else {
+                if (ex != null) {
+                    ex.printStackTrace();
+                }
+                showMessage("Failed to process reservation in Supabase.", "#DC2626");
             }
-            showMessage("Failed to process reservation in Supabase.", "#DC2626");
         });
 
         new Thread(task).start();
+    }
+
+    /**
+     * Shows a confirmation dialog offering to join the waiting list when a trip is full.
+     */
+    private void showJoinWaitlistDialog(Trip trip) {
+        User currentUser = userSession.getCurrentUser();
+        if (currentUser == null) {
+            showMessage("Please log in to join the waiting list.", "#DC2626");
+            return;
+        }
+
+        int existingPosition = reservationService.getWaitingListPosition(currentUser, trip);
+        if (existingPosition != -1) {
+            showMessage("You are already #" + existingPosition + " on the waiting list.", "#0284C7");
+            return;
+        }
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Trip Fully Booked");
+        alert.setHeaderText("This trip is fully booked.");
+        alert.setContentText("Would you like to join the waiting list? You'll be notified if a seat opens up.");
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            Task<Boolean> waitlistTask = new Task<>() {
+                @Override
+                protected Boolean call() throws Exception {
+                    return reservationService.joinWaitingList(currentUser, trip);
+                }
+            };
+            waitlistTask.setOnSucceeded(e -> {
+                if (waitlistTask.getValue()) {
+                    int newPosition = reservationService.getWaitingListPosition(currentUser, trip);
+                    showMessage("You are #" + newPosition + " on the waiting list.", "#0284C7");
+                } else {
+                    showMessage("Failed to join waiting list.", "#DC2626");
+                }
+            });
+            waitlistTask.setOnFailed(e -> {
+                showMessage("Failed to join waiting list.", "#DC2626");
+            });
+            new Thread(waitlistTask).start();
+        }
     }
 
     private void showQRCodePopup(Image qrImage, String payload) {
