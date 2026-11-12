@@ -42,6 +42,8 @@ public class RegisterController {
     @FXML private Button backToLoginButton;
     @FXML private Label messageLabel;
 
+    private boolean isRegisterSuccess;
+
     @Autowired
     public RegisterController(SupabaseService supabaseService, ApplicationContext applicationContext) {
         this.supabaseService = supabaseService;
@@ -53,6 +55,7 @@ public class RegisterController {
         categoryComboBox.setItems(FXCollections.observableArrayList(
                 "STUDENT / FACULTY", "ADMIN", "DRIVER"
         ));
+        isRegisterSuccess = false;
     }
 
     @FXML
@@ -86,6 +89,7 @@ public class RegisterController {
             // Pass both the dbRole and the original selection to the service
             supabaseService.registerAccount(name, email, password, dbRole, selection);
             showMessage("Account created successfully!", false);
+            isRegisterSuccess = true;
             handleGoToLogin();
         } catch (org.springframework.web.client.HttpStatusCodeException e) {
             e.printStackTrace();
@@ -106,6 +110,13 @@ public class RegisterController {
 
             Stage stage = (Stage) backToLoginButton.getScene().getWindow();
             stage.setScene(new Scene(root, 900, 600));
+
+            // Display successful registration in login view
+            if (isRegisterSuccess) {
+                LoginController login = fxmlLoader.getController();
+                login.showMessage("Account created successfully!", false);
+            }
+
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();

@@ -5,6 +5,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.paint.Color;
 import org.springframework.stereotype.Controller;
 import ph.edu.dlsu.anilink.model.Administrator;
 import ph.edu.dlsu.anilink.model.Driver;
@@ -47,7 +48,7 @@ public class LoginController {
         String password = passwordField.getText();
 
         if (email.isEmpty() || password.isEmpty()) {
-            messageLabel.setText("Please fill in all fields.");
+            showMessage("Please fill in all fields.", true);
             return;
         }
 
@@ -70,16 +71,21 @@ public class LoginController {
 
                 viewNavigator.navigateTo(event, fxmlPath, 1000, 650);
             } else {
-                messageLabel.setText("Invalid email or password.");
+                showMessage("Invalid email or password.", true);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            messageLabel.setText("Login error occurred.");
+            showMessage("Login error occurred.", true);
         }
     }
 
     @FXML
     private void handleGoToRegister(ActionEvent event) {
         viewNavigator.navigateTo(event, "/fxml/Register.fxml", 900, 600);
+    }
+
+    public void showMessage(String message, boolean isError) {
+        messageLabel.setText(message);
+        messageLabel.setTextFill(isError ? Color.RED : Color.GREEN);
     }
 }
