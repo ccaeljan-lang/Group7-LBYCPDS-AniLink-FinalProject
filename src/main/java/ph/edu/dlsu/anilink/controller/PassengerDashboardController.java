@@ -6,12 +6,10 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
+import javafx.scene.control.*;
 import org.springframework.stereotype.Controller;
 import ph.edu.dlsu.anilink.model.User;
+import ph.edu.dlsu.anilink.model.WaitingList;
 import ph.edu.dlsu.anilink.service.SupabaseService;
 import ph.edu.dlsu.anilink.util.UserSession;
 import ph.edu.dlsu.anilink.util.ViewNavigator;
@@ -58,6 +56,7 @@ public class PassengerDashboardController {
                 passengerNameLabel.setText("Welcome, " + user.getName());
             }
             loadPassengerReservationsAsync(user.getUserId());
+            checkWaitingListPromotion(user.getUserId());
         }
     }
 
@@ -133,6 +132,69 @@ public class PassengerDashboardController {
                 task.getException().printStackTrace();
             }
             showAlert("Database Error", "Failed to retrieve passenger reservations.");
+        });
+
+        new Thread(task).start();
+    }
+
+    private void checkWaitingListPromotion(Long passengerId) {
+        Task<StringBuilder> task = new Task<>() {
+            @Override
+            protected StringBuilder call() throws Exception {
+                StringBuilder newConfirmedTrips = new StringBuilder();
+
+                // Fetches waiting list of passenger with embedded trip, route, and schedule details
+                String json = supabaseService.getWaitingListByPassenger(passengerId);
+                JsonNode waitlists = objectMapper.readTree(json);
+
+                if (waitlists.isArray() && !waitlists.isEmpty()) {
+                    for (JsonNode node : waitlists) {
+                        long id = node.path("id").asLong();
+                        String status = node.path("status").asText("N/A");
+                        String joinedAt = node.path("joined_at").asText("N/A").split("T")[0];
+                        boolean isNotified = node.path("notified").asBoolean();
+
+                        JsonNode trip = node.path("trip");
+                        JsonNode route = trip.path("route");
+                        JsonNode schedule = trip.path("schedule");
+
+                        String origin = route.path("origin").asText("Unknown");
+                        String destination = route.path("destination").asText("Unknown");
+                        String routeText = origin + " ↔ " + destination;
+                        String departureTime = schedule.path("departure_time").asText("N/A");
+
+                        // Gather newly confirmed trips from the passenger's waiting list
+                        if (status.equalsIgnoreCase(WaitingList.STATUS_CONFIRMED) && !isNotified) {
+                            newConfirmedTrips.append("WAIT-").append(id).append(" | ")
+                                    .append(routeText).append(" | ")
+                                    .append(joinedAt).append(" | ")
+                                    .append(departureTime).append("\n");
+
+                            // Ensures that notifications for confirmed trips aren't repeated in the future
+                            supabaseService.updateWaitingListNotified(id, true);
+                        }
+                    }
+                }
+
+                return newConfirmedTrips;
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            if (!task.getValue().isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Waiting List Promotion");
+                alert.setHeaderText("The wait is over!\nYou are now confirmed in the following trips:");
+                alert.setContentText(task.getValue().toString());
+                alert.showAndWait();
+            }
+        });
+
+        task.setOnFailed(e -> {
+            if (task.getException() != null) {
+                task.getException().printStackTrace();
+            }
+            showAlert("Database Error", "Failed to retrieve passenger waiting list.");
         });
 
         new Thread(task).start();
