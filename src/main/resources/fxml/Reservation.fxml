@@ -13,22 +13,14 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane prefHeight="650.0"
-            prefWidth="1000.0"
-            xmlns="http://javafx.com/javafx/21"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="ph.edu.dlsu.anilink.controller.ReservationController">
+<BorderPane prefHeight="650.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ph.edu.dlsu.anilink.controller.ReservationController">
 
     <stylesheets>
         <URL value="@../css/main.css" />
     </stylesheets>
 
     <top>
-        <HBox alignment="CENTER_LEFT"
-              prefHeight="60.0"
-              spacing="20.0"
-              style="-fx-background-color: #0d5c36; -fx-padding: 10 25;"
-              styleClass="top-nav">
+        <HBox alignment="CENTER_LEFT" prefHeight="60.0" spacing="20.0" style="-fx-background-color: #0d5c36; -fx-padding: 10 25;" styleClass="top-nav">
             <ImageView fitHeight="28.0" preserveRatio="true">
                 <image>
                     <Image url="@../images/nologotitle.png" />
@@ -41,25 +33,18 @@
     </top>
 
     <left>
-        <VBox prefWidth="220.0"
-              spacing="8.0"
-              style="-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-width: 0 1 0 0;"
-              styleClass="sidebar-white">
+        <VBox prefWidth="220.0" spacing="8.0" style="-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-width: 0 1 0 0;" styleClass="sidebar-white">
             <padding>
                 <Insets bottom="20.0" left="15.0" right="15.0" top="20.0" />
             </padding>
             <Button onAction="#handleHome" prefHeight="40.0" prefWidth="190.0" styleClass="sidebar-btn" text="Home" />
             <Button onAction="#handleReservations" prefHeight="40.0" prefWidth="190.0" styleClass="sidebar-btn, sidebar-btn-active" text="Reservations" />
             <Button onAction="#handleTripHistory" prefHeight="40.0" prefWidth="190.0" styleClass="sidebar-btn" text="My Reservations" />
+         <Button layoutX="20.0" layoutY="130.0" onAction="#handleWaitingList" prefHeight="40.0" prefWidth="190.0" styleClass="sidebar-btn" text="Waiting List" />
 
             <Region VBox.vgrow="ALWAYS" />
 
-            <Button onAction="#handleLogout"
-                    prefHeight="40.0"
-                    prefWidth="190.0"
-                    style="-fx-background-color: #FEF2F2; -fx-text-fill: #DC2626; -fx-border-color: #FECACA; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-font-weight: bold; -fx-cursor: hand;"
-                    styleClass="sidebar-btn"
-                    text="Logout" />
+            <Button onAction="#handleLogout" prefHeight="40.0" prefWidth="190.0" style="-fx-background-color: #FEF2F2; -fx-text-fill: #DC2626; -fx-border-color: #FECACA; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-font-weight: bold; -fx-cursor: hand;" styleClass="sidebar-btn" text="Logout" />
         </VBox>
     </left>
 
@@ -74,64 +59,35 @@
                 <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B;" text="Select your route and schedule to secure your seat" />
             </VBox>
 
-            <VBox alignment="CENTER"
-                  maxWidth="480.0"
-                  spacing="20.0"
-                  style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 8, 0, 0, 4);"
-                  styleClass="dashboard-card">
+            <VBox alignment="CENTER" maxWidth="480.0" spacing="20.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 8, 0, 0, 4);" styleClass="dashboard-card">
                 <padding>
                     <Insets bottom="35.0" left="35.0" right="35.0" top="35.0" />
                 </padding>
 
-                <VBox spacing="6.0" prefWidth="380.0">
+                <VBox prefWidth="380.0" spacing="6.0">
                     <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;" text="Select Route" />
-                    <ComboBox fx:id="routeSelection"
-                              prefHeight="40.0"
-                              prefWidth="380.0"
-                              promptText="Choose departure and destination"
-                              style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
+                    <ComboBox fx:id="routeSelection" prefHeight="40.0" prefWidth="380.0" promptText="Choose departure and destination" style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
                 </VBox>
 
-                <VBox spacing="6.0" prefWidth="380.0">
+                <VBox prefWidth="380.0" spacing="6.0">
                     <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;" text="Select Date" />
-                    <DatePicker fx:id="dateSelection"
-                                prefHeight="40.0"
-                                prefWidth="380.0"
-                                promptText="Pick a travel date"
-                                style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
+                    <DatePicker fx:id="dateSelection" prefHeight="40.0" prefWidth="380.0" promptText="Pick a travel date" style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
                 </VBox>
 
-                <VBox spacing="6.0" prefWidth="380.0">
+                <VBox prefWidth="380.0" spacing="6.0">
                     <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;" text="Select Schedule" />
-                    <ComboBox fx:id="scheduleSelection"
-                              prefHeight="40.0"
-                              prefWidth="380.0"
-                              promptText="Choose available time"
-                              style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
+                    <ComboBox fx:id="scheduleSelection" prefHeight="40.0" prefWidth="380.0" promptText="Choose available time" style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
                 </VBox>
 
-                <HBox alignment="CENTER"
-                      prefWidth="380.0"
-                      spacing="20.0"
-                      style="-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 15px;">
+                <HBox alignment="CENTER" prefWidth="380.0" spacing="20.0" style="-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 15px;">
                     <Label fx:id="availableSeats" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #0F172A;" text="Available Seats: --" />
                     <Region HBox.hgrow="ALWAYS" />
                     <Label fx:id="tripStatus" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #004d26;" styleClass="status-badge, status-scheduled" text="Status: --" />
                 </HBox>
 
-                <Button fx:id="reserveButton"
-                        onAction="#handleReserve"
-                        prefHeight="45.0"
-                        prefWidth="380.0"
-                        style="-fx-background-color: #0d5c36; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;"
-                        styleClass="primary-button"
-                        text="Confirm Reservation" />
+                <Button fx:id="reserveButton" onAction="#handleReserve" prefHeight="45.0" prefWidth="380.0" style="-fx-background-color: #0d5c36; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;" styleClass="primary-button" text="Confirm Reservation" />
 
-                <Label fx:id="reservationMessage"
-                       alignment="CENTER"
-                       prefWidth="380.0"
-                       style="-fx-font-size: 13px; -fx-text-fill: #DC2626; -fx-font-weight: bold;"
-                       wrapText="true" />
+                <Label fx:id="reservationMessage" alignment="CENTER" prefWidth="380.0" style="-fx-font-size: 13px; -fx-text-fill: #DC2626; -fx-font-weight: bold;" wrapText="true" />
             </VBox>
         </VBox>
     </center>
