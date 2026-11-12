@@ -101,7 +101,6 @@ public class WaitingListController {
                         long id = node.path("id").asLong();
                         String status = node.path("status").asText("N/A");
                         String joinedAt = node.path("joined_at").asText("N/A").split("T")[0];
-                        boolean isNotified = node.path("notified").asBoolean();
 
                         JsonNode trip = node.path("trip");
                         JsonNode route = trip.path("route");

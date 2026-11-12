@@ -627,4 +627,12 @@ public class SupabaseService {
                 .retrieve()
                 .toBodilessEntity();
     }
+
+    public void updateWaitingListNotified(Long id, boolean notified) {
+        restClient.patch()
+                .uri("/waiting_lists?id=eq." + id)
+                .body(java.util.Map.of("notified", notified))
+                .retrieve()
+                .toBodilessEntity();
+    }
 }
