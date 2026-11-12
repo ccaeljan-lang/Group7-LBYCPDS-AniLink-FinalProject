@@ -150,6 +150,11 @@ public class MyReservationsController {
     }
 
     @FXML
+    private void handleWaitingList(ActionEvent event) {
+        viewNavigator.navigateTo(event, "/fxml/WaitingList.fxml", 1000, 650);
+    }
+
+    @FXML
     private void handleLogout(ActionEvent event) {
         userSession.clearSession();
         viewNavigator.navigateTo(event, "/fxml/Login.fxml", 900, 600);

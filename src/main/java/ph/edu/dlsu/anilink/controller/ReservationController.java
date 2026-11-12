@@ -367,6 +367,23 @@ public class ReservationController {
         });
     }
 
+    private void showWaitlistPopup() {
+        Platform.runLater(() -> {
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+            confirm.setTitle("Trip Fully Booked");
+            confirm.setHeaderText("Would you like to join a WAITLIST for this trip?");
+            confirm.setContentText("""
+                    This trip is fully booked. No available seats remaining.
+                    You will be notified and automatically reserved of a seat if one becomes free.
+                    """);
+
+            Optional<ButtonType> result = confirm.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+                // TODO: Perform waitlisting
+            }
+        });
+    }
+
     private void showMessage(String message, String colorCode) {
         reservationMessage.setText(message);
         reservationMessage.setStyle("-fx-text-fill: " + colorCode + "; -fx-font-weight: bold; -fx-font-size: 13px;");
@@ -386,6 +403,11 @@ public class ReservationController {
     @FXML
     private void handleTripHistory(ActionEvent event) {
         viewNavigator.navigateTo(event, "/fxml/MyReservations.fxml", 1000, 650);
+    }
+
+    @FXML
+    private void handleWaitingList(ActionEvent event) {
+        viewNavigator.navigateTo(event, "/fxml/WaitingList.fxml", 1000, 650);
     }
 
     @FXML
