@@ -588,6 +588,18 @@ public class SupabaseService {
                 .body(String.class);
     }
 
+    public String getWaitingListByPassenger(Long passengerId) {
+        return restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/waiting_lists")
+                        .queryParam("passenger_id", "eq." + passengerId)
+                        .queryParam("order", "joined_at.asc")
+                        .queryParam("select", "*,trip:trips(*,route:routes(*),schedule:departure_schedules(*))")
+                        .build())
+                .retrieve()
+                .body(String.class);
+    }
+
     public String createWaitingListEntry(Long tripId, Long passengerId) {
         return restClient.post()
                 .uri("/waiting_lists")
