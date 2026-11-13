@@ -53,7 +53,7 @@ public class RegisterController {
     @FXML
     private void initialize() {
         categoryComboBox.setItems(FXCollections.observableArrayList(
-                "STUDENT / FACULTY", "ADMIN", "DRIVER"
+                "PASSENGER", "ADMIN", "DRIVER"
         ));
         isRegisterSuccess = false;
     }
@@ -101,14 +101,14 @@ public class RegisterController {
         }
 
         // Determine the actual database Role based on the dropdown selection.
-        // STUDENT and FACULTY both map to ONE PASSENGER category.
+        // PASSENGER covers both students and faculty in one category.
         String dbRole;
         if ("ADMIN".equals(selection)) {
             dbRole = "ADMINISTRATOR";
         } else if ("DRIVER".equals(selection)) {
             dbRole = "DRIVER";
         } else {
-            dbRole = "PASSENGER"; // STUDENT/FACULTY defaults to PASSENGER
+            dbRole = "PASSENGER"; // PASSENGER selection maps to PASSENGER role
         }
 
         try {
