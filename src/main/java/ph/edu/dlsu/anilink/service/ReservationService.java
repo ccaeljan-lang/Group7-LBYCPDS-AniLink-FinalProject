@@ -7,7 +7,6 @@ import ph.edu.dlsu.anilink.model.Reservation;
 import ph.edu.dlsu.anilink.model.Trip;
 import ph.edu.dlsu.anilink.model.TripFullException;
 import ph.edu.dlsu.anilink.model.User;
-import ph.edu.dlsu.anilink.model.WaitingList;
 
 import java.util.List;
 import java.util.UUID;
