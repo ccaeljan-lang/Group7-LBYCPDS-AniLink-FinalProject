@@ -144,4 +144,77 @@ public class ReservationService {
         }
         return waitingListService.cancelWaitlist(trip.getTripId(), user.getUserId());
     }
+
+    /**
+     * Repeats a previous reservation by creating a new booking on the same trip
+     * (same route and departure schedule).
+     *
+     * <p>Seat availability is checked before creating the new reservation to prevent
+     * overbooking or duplicate active reservations on a full trip.</p>
+     *
+     * @param user                the passenger repeating the booking
+     * @param originalReservationId the ID of the existing reservation to repeat
+     * @return the newly created {@link Reservation}
+     * @throws TripFullException if the trip is fully booked
+     * @throws IllegalStateException if the original reservation or trip cannot be found
+     */
+    public Reservation repeatReservation(User user, Long originalReservationId) {
+        if (user == null || originalReservationId == null) {
+            throw new IllegalArgumentException("User and reservation ID are required.");
+        }
+
+        try {
+            // 1. Fetch original reservation to get the trip ID
+            String json = supabaseService.getReservationById(originalReservationId);
+            List<Reservation> reservations = objectMapper.readValue(
+                    json,
+                    new TypeReference<List<Reservation>>() {}
+            );
+
+            if (reservations == null || reservations.isEmpty()) {
+                throw new IllegalStateException("Original reservation not found.");
+            }
+
+            Long tripId = reservations.get(0).getTrip().getTripId();
+
+            // 2. Fetch full trip details (includes route and schedule) for availability check
+            String tripJson = supabaseService.getTripDetails(tripId);
+            List<Trip> tripList = objectMapper.readValue(
+                    tripJson,
+                    new TypeReference<List<Trip>>() {}
+            );
+
+            if (tripList == null || tripList.isEmpty()) {
+                throw new IllegalStateException("Unable to retrieve trip details for repeat booking.");
+            }
+
+            Trip originalTrip = tripList.get(0);
+
+            // 3. Construct a Trip for the repeat booking with same route and schedule
+            Trip repeatTrip = new Trip();
+            repeatTrip.setTripId(originalTrip.getTripId());
+            repeatTrip.setRoute(originalTrip.getRoute());
+            repeatTrip.setSchedule(originalTrip.getSchedule());
+            repeatTrip.setCapacity(originalTrip.getCapacity());
+            repeatTrip.setSeatsTaken(originalTrip.getSeatsTaken());
+            repeatTrip.setStatus(originalTrip.getStatus());
+
+            // 4. Check seat availability before booking
+            if (!canBook(user, repeatTrip)) {
+                if (repeatTrip.isFull()) {
+                    throw new TripFullException("This trip is fully booked. You can join the waiting list.");
+                }
+                throw new IllegalStateException(getBookingError(user, repeatTrip));
+            }
+
+            // 5. Create the new reservation
+            return createReservation(user, repeatTrip);
+
+        } catch (TripFullException e) {
+            throw e;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to repeat reservation: " + e.getMessage(), e);
+        }
+    }
 }
