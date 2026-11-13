@@ -397,6 +397,20 @@ public class ReservationController {
         viewNavigator.navigateTo(event, "/fxml/Login.fxml", 900, 600);
     }
 
+    /**
+     * Creates a repeat reservation for the given user on the same trip as the
+     * original reservation (same route and departure schedule). Seat availability
+     * is checked before booking to prevent overbooking or duplicates on a full trip.
+     *
+     * @param user                the passenger repeating the booking
+     * @param originalReservationId the ID of the existing reservation to repeat
+     * @return the newly created {@link Reservation}
+     * @throws TripFullException if the trip is fully booked
+     */
+    public Reservation repeatBooking(User user, Long originalReservationId) {
+        return reservationService.repeatReservation(user, originalReservationId);
+    }
+
     // Helper record/class for trip data mapping
     private static class TripDetails {
         final Long tripId;
