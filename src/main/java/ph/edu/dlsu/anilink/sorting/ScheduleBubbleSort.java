@@ -1,5 +1,5 @@
 
-package ph.edu.dlsu.anilink.util;
+package ph.edu.dlsu.anilink.sorting;
 
 import ph.edu.dlsu.anilink.model.DepartureSchedule;
 
