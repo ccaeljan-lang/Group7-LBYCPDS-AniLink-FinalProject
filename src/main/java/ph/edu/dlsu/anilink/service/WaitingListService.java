@@ -1,27 +1,31 @@
 package ph.edu.dlsu.anilink.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import ph.edu.dlsu.anilink.model.WaitingList;
+import ph.edu.dlsu.anilink.queue.WaitingListQueue;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Service managing the first-in-first-out (FIFO) waiting list for full trips.
  *
- * <p>Each trip maintains its own in-memory queue of waiting passengers, backed by
+ * <p>Each trip maintains its own simple queue of waiting passengers, backed by
  * the {@code waiting_lists} table in Supabase. Queue order is determined by
  * {@code joined_at} (earliest joined = first in line).
  * </p>
+ *
+ * <p>The queue itself is implemented by {@link WaitingListQueue}, a plain Java
+ * FIFO queue with no external library dependencies and no concurrency utilities.</p>
  */
 @Service
 public class WaitingListService {
 
-    private final Map<Long, Queue<WaitingList>> queues = new ConcurrentHashMap<>();
+    private final Map<Long, WaitingListQueue> queues = new HashMap<>();
     private final SupabaseService supabaseService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -34,21 +38,14 @@ public class WaitingListService {
      * or -1 if the passenger is not on the list.
      */
     public int getPosition(Long tripId, Long passengerId) {
-        Queue<WaitingList> queue = loadQueue(tripId);
-        int position = 1;
-        for (WaitingList entry : queue) {
-            if (Objects.equals(entry.getPassengerId(), passengerId)) {
-                return position;
-            }
-            position++;
-        }
-        return -1;
+        WaitingListQueue queue = loadQueue(tripId);
+        return queue.positionOf(passengerId);
     }
 
     /**
      * Adds a passenger to the waiting list for a trip.
      *
-     * @return true if the passenger was added, false if already on the list
+     * @return true if added, false if already on the list
      */
     public boolean joinWaitlist(Long tripId, Long passengerId, String passengerName) {
         if (getPosition(tripId, passengerId) != -1) {
@@ -64,7 +61,7 @@ public class WaitingListService {
             entry.setPassengerName(passengerName);
             entry.setStatus(WaitingList.STATUS_WAITING);
 
-            queues.computeIfAbsent(tripId, k -> new ConcurrentLinkedQueue<>()).add(entry);
+            queues.computeIfAbsent(tripId, k -> new WaitingListQueue()).enqueue(entry);
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -75,17 +72,18 @@ public class WaitingListService {
     /**
      * Removes a passenger from the waiting list for a trip.
      *
-     * @return true if the passenger was removed, false if not found
+     * @return true if removed, false if not found
      */
     public boolean cancelWaitlist(Long tripId, Long passengerId) {
-        Queue<WaitingList> queue = queues.get(tripId);
+        WaitingListQueue queue = queues.get(tripId);
         if (queue == null) {
             return false;
         }
 
         WaitingList toRemove = null;
-        for (WaitingList entry : queue) {
-            if (Objects.equals(entry.getPassengerId(), passengerId)
+        for (WaitingList entry : queue.toList()) {
+            if (entry.getPassengerId() != null
+                    && entry.getPassengerId().equals(passengerId)
                     && WaitingList.STATUS_WAITING.equals(entry.getStatus())) {
                 toRemove = entry;
                 break;
@@ -96,7 +94,7 @@ public class WaitingListService {
             return false;
         }
 
-        boolean removed = queue.remove(toRemove);
+        boolean removed = queue.removePassenger(passengerId);
         if (removed && toRemove.getId() != null) {
             supabaseService.updateWaitingListStatus(toRemove.getId(), WaitingList.STATUS_CANCELLED);
         }
@@ -104,20 +102,23 @@ public class WaitingListService {
     }
 
     /**
-     * Promotes the next passenger in line for a trip.
+     * Promotes the next passenger in line.
      *
-     * <p>Removes the head of the FIFO queue, marks the entry as CONFIRMED in Supabase,
-     * and returns the promoted {@link WaitingList} entry (or null if the queue is empty).
-     * The caller is responsible for creating an actual reservation for the returned
-     * passenger.</p>
+     * <p>Removes the head of the FIFO queue, marks the entry as CONFIRMED in
+     * Supabase, and returns the promoted {@link WaitingList} entry. The caller
+     * is responsible for creating an actual reservation via
+     * {@link ph.edu.dlsu.anilink.service.ReservationService#createReservation}.
+     * </p>
+     *
+     * @return the promoted entry, or null if the queue is empty
      */
     public WaitingList promoteNext(Long tripId) {
-        Queue<WaitingList> queue = queues.get(tripId);
+        WaitingListQueue queue = queues.get(tripId);
         if (queue == null) {
             return null;
         }
 
-        WaitingList next = queue.poll();
+        WaitingList next = queue.dequeue();
         if (next == null) {
             return null;
         }
@@ -133,16 +134,16 @@ public class WaitingListService {
      * Returns the full waiting list for a trip, ordered by position (FIFO).
      */
     public List<WaitingList> getWaitingList(Long tripId) {
-        return new ArrayList<>(loadQueue(tripId));
+        return new ArrayList<>(loadQueue(tripId).toList());
     }
 
     /**
-     * Loads (or reloads) the waiting list queue for a trip from Supabase.
+     * Loads (or reloads) the queue for a trip from Supabase.
      * Entries are ordered by joined_at ascending (oldest first).
      */
-    private Queue<WaitingList> loadQueue(Long tripId) {
+    private WaitingListQueue loadQueue(Long tripId) {
         return queues.computeIfAbsent(tripId, k -> {
-            Queue<WaitingList> queue = new ConcurrentLinkedQueue<>();
+            WaitingListQueue queue = new WaitingListQueue();
             try {
                 String json = supabaseService.getWaitingListByTrip(tripId);
                 if (json == null || json.isBlank()) {
@@ -163,7 +164,7 @@ public class WaitingListService {
                         }
 
                         entry.setStatus(node.path("status").asText(WaitingList.STATUS_WAITING));
-                        queue.add(entry);
+                        queue.enqueue(entry);
                     }
                 }
             } catch (Exception e) {
