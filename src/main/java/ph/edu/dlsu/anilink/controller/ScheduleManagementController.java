@@ -33,9 +33,8 @@ import java.util.Optional;
 /**
  * Schedule Management Controller
  *
- * feat: Implement departure schedule creation,
- * schedule selection dropdowns, route filtering,
- * and chronological sorting using Bubble Sort.
+ * Handles departure schedule creation, schedule selection dropdowns,
+ * route filtering, and chronological sorting using Bubble Sort.
  *
  * Existing Supabase and navigation features are retained.
  */
@@ -44,19 +43,21 @@ public class ScheduleManagementController {
 
     @FXML private Label adminNameLabel;
     @FXML private ComboBox<Route> routeComboBox;
-    // feat: Dropdown for selecting or entering departure time.
     @FXML private ComboBox<String> departureTimeComboBox;
-    // feat: Dropdown for selecting existing schedules.
     @FXML private ComboBox<DepartureSchedule> existingScheduleComboBox;
     @FXML private TextField capacityField;
     @FXML private ListView<DepartureSchedule> scheduleListView;
     @FXML private Label statusLabel;
+    // Create Schedule button (disabled while a request is in flight).
+    @FXML private Button createScheduleButton;
 
-    // feat: Shared schedule collection for list and dropdown.
+    // Shared schedule collection for list and dropdown.
     private final ObservableList<DepartureSchedule> schedules =
             FXCollections.observableArrayList();
-    // feat: Prevent outdated requests from replacing current results.
+    // Prevent outdated requests from replacing current results.
     private long latestScheduleRequest = 0;
+    // Prevent rapid repeat schedule-creation submissions.
+    private boolean creatingSchedule = false;
 
     private final SupabaseService supabaseService;
     private final UserSession userSession;
@@ -90,10 +91,9 @@ public class ScheduleManagementController {
         scheduleListView.setItems(schedules);
         existingScheduleComboBox.setItems(schedules);
 
-        // feat: Initialize departure time dropdown.
         setupDepartureTimeDropdown();
 
-        // feat: Synchronize ListView and ComboBox selection.
+        // Synchronize ListView and ComboBox selection.
         scheduleListView.getSelectionModel()
                 .selectedItemProperty()
                 .addListener((observable, oldValue, selected) -> {
@@ -117,7 +117,7 @@ public class ScheduleManagementController {
     }
 
     /**
-     * feat: Generate departure times every 30 minutes.
+     * Generate departure times every 30 minutes.
      *
      * Administrators can choose a predefined time
      * or enter a custom time using HH:mm.
@@ -280,9 +280,9 @@ public class ScheduleManagementController {
     }
 
     /**
-     * feat: Retrieve schedules from Supabase.
-     * feat: Apply Bubble Sort by departure time.
-     * feat: Filter schedules according to selected route.
+     * Retrieve schedules from Supabase.
+     * Apply Bubble Sort by departure time.
+     * Filter schedules according to selected route.
      */
     private void loadSchedulesAsync() {
 
@@ -317,7 +317,7 @@ public class ScheduleManagementController {
                                 new TypeReference<List<DepartureSchedule>>() {}
                         );
 
-                // feat: Apply Bubble Sort (earliest to latest).
+                // Apply Bubble Sort (earliest to latest).
                 return ScheduleBubbleSort.byDepartureTime(
                         loadedSchedules
                 );
@@ -374,12 +374,6 @@ public class ScheduleManagementController {
         }
     }
 
-    /**
-     * feat: Create schedules using dropdown-selected
-     * or custom departure times.
-     *
-     * Existing Supabase creation logic is retained.
-     */
     @FXML
     private void handleAddSchedule() {
 
@@ -400,6 +394,17 @@ public class ScheduleManagementController {
             showInlineStatus(
                     "Please fill in all fields.",
                     "#DC2626"
+            );
+
+            return;
+        }
+
+        // Prevent rapid repeat submissions while a request is in flight.
+        if (creatingSchedule) {
+
+            showInlineStatus(
+                    "Please wait, a schedule is being created.",
+                    "#0284C7"
             );
 
             return;
@@ -436,10 +441,23 @@ public class ScheduleManagementController {
                     "#0284C7"
             );
 
-            Task<Void> task = new Task<>() {
+            creatingSchedule = true;
+            if (createScheduleButton != null) {
+                createScheduleButton.setDisable(true);
+            }
+
+            Task<String> task = new Task<>() {
 
                 @Override
-                protected Void call() throws Exception {
+                protected String call() throws Exception {
+
+                    // Check Supabase BEFORE inserting to prevent duplicates.
+                    // Same route_id + departure_time must not exist twice.
+                    if (supabaseService.scheduleExists(
+                            route.getRouteId(),
+                            dbFormattedTime)) {
+                        return "DUPLICATE";
+                    }
 
                     // EXISTING: Save the schedule to Supabase.
                     supabaseService.createSchedule(
@@ -448,11 +466,37 @@ public class ScheduleManagementController {
                             capacity
                     );
 
-                    return null;
+                    return "SUCCESS";
                 }
             };
 
             task.setOnSucceeded(e -> {
+
+                creatingSchedule = false;
+                if (createScheduleButton != null) {
+                    createScheduleButton.setDisable(false);
+                }
+
+                String outcome = task.getValue();
+
+                if ("DUPLICATE".equals(outcome)) {
+
+                    showInlineStatus(
+                            "A schedule for this route and time already exists.",
+                            "#DC2626"
+                    );
+
+                    showAlert(
+                            Alert.AlertType.WARNING,
+                            "Duplicate Schedule",
+                            "A departure schedule for this route at "
+                                    + dbFormattedTime
+                                    + " already exists. "
+                                    + "Please choose a different time or route."
+                    );
+
+                    return;
+                }
 
                 showInlineStatus(
                         "Schedule created successfully!",
@@ -461,11 +505,16 @@ public class ScheduleManagementController {
 
                 clearFields();
 
-                // feat: Reload and Bubble Sort after creation.
+                // Reload and Bubble Sort after creation.
                 loadSchedulesAsync();
             });
 
             task.setOnFailed(e -> {
+
+                creatingSchedule = false;
+                if (createScheduleButton != null) {
+                    createScheduleButton.setDisable(false);
+                }
 
                 Throwable error = e.getSource().getException();
 
@@ -566,7 +615,7 @@ public class ScheduleManagementController {
                         "#16A34A"
                 );
 
-                // feat: Refresh sorted schedules after deletion.
+                // Refresh sorted schedules after deletion.
                 loadSchedulesAsync();
             });
 
@@ -590,10 +639,8 @@ public class ScheduleManagementController {
         }
     }
 
-    /**
-     * feat: Clear entered values after schedule creation.
-     * Keep the route selected for consecutive schedule creation.
-     */
+    // Clear entered values after schedule creation.
+    // Keep the route selected for consecutive schedule creation.
     private void clearFields() {
 
         departureTimeComboBox.setValue(null);

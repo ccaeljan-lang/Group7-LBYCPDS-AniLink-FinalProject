@@ -168,7 +168,8 @@
 
                     <Region prefHeight="10.0" />
 
-                    <Button onAction="#handleAddSchedule"
+                    <Button fx:id="createScheduleButton"
+                            onAction="#handleAddSchedule"
                             prefHeight="45.0"
                             prefWidth="300.0"
                             style="-fx-background-color: #0d5c36; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;"

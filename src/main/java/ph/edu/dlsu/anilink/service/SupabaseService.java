@@ -369,6 +369,36 @@ public class SupabaseService {
                 .body(String.class);
     }
 
+    /**
+     * Checks Supabase BEFORE insert to prevent duplicate departure schedules.
+     *
+     * <p>The same {@code route_id} + {@code departure_time} must not exist
+     * twice. The same departure time on a DIFFERENT route IS allowed.</p>
+     *
+     * @param routeId       the route ID
+     * @param departureTime the departure time in HH:mm:ss format
+     * @return true if a matching schedule already exists in Supabase
+     */
+    public boolean scheduleExists(Long routeId, String departureTime) {
+        try {
+            String response = restClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/departure_schedules")
+                            .queryParam("route_id", "eq." + routeId)
+                            .queryParam("departure_time", "eq." + departureTime)
+                            .queryParam("select", "id")
+                            .build())
+                    .retrieve()
+                    .body(String.class);
+
+            JsonNode node = objectMapper.readTree(response);
+            return node != null && node.isArray() && node.size() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error checking duplicate schedule: " + e.getMessage(), e);
+        }
+    }
+
     public String createSchedule(Long routeId, String departureTime, int capacity) {
         return restClient.post()
                 .uri("/departure_schedules")
