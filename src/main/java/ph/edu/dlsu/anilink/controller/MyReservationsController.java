@@ -16,7 +16,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import org.springframework.stereotype.Controller;
 import ph.edu.dlsu.anilink.model.Reservation;
-import ph.edu.dlsu.anilink.model.Trip;
 import ph.edu.dlsu.anilink.model.TripFullException;
 import ph.edu.dlsu.anilink.model.User;
 import ph.edu.dlsu.anilink.service.BookingSummaryService;
