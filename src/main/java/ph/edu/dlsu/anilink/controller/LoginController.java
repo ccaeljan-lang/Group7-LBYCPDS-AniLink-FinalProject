@@ -55,6 +55,10 @@ public class LoginController {
         try {
             User user = supabaseService.findUserByEmail(email);
 
+            // SECURITY RISK (documented): passwords are compared in plaintext.
+            // Hash passwords (e.g., bcrypt) before persistence and compare
+            // hashes in a production system. Do not store or transmit plain
+            // passwords without additional protection.
             if (user != null && user.getPassword().equals(password)) {
                 userSession.setCurrentUser(user);
 

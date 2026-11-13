@@ -65,17 +65,43 @@ public class RegisterController {
         String selection = categoryComboBox.getValue();
         String password = passwordField.getText();
 
+        // Required fields
         if (name.isEmpty() || email.isEmpty() || password.isEmpty() || selection == null) {
             showMessage("Please fill in all required fields.", true);
             return;
         }
 
+        // DLSU email format check (@dlsu.edu.ph)
         if (!email.toLowerCase().endsWith("@dlsu.edu.ph")) {
-            showMessage("Please use a valid DLSU email address.", true);
+            showMessage("Please use a valid DLSU email address (@dlsu.edu.ph).", true);
             return;
         }
 
-        // Determine the actual database Role based on the dropdown selection
+        // SECURITY GAP (documented): A @dlsu.edu.ph suffix check only validates
+        // the domain format. It does NOT verify email ownership or EAF. A real
+        // confirmation requires a properly configured and tested email/auth
+        // provider (e.g., an email confirmation link). Do not claim actual
+        // email verification here without such a provider.
+
+        // Basic password rules
+        if (!isValidPassword(password)) {
+            return;
+        }
+
+        // Prevent duplicate email registration (check Supabase before insert).
+        try {
+            if (supabaseService.emailExists(email)) {
+                showMessage("An account with this email already exists.", true);
+                return;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            showMessage("Error checking email: " + e.getMessage(), true);
+            return;
+        }
+
+        // Determine the actual database Role based on the dropdown selection.
+        // STUDENT and FACULTY both map to ONE PASSENGER category.
         String dbRole;
         if ("ADMIN".equals(selection)) {
             dbRole = "ADMINISTRATOR";
@@ -86,7 +112,9 @@ public class RegisterController {
         }
 
         try {
-            // Pass both the dbRole and the original selection to the service
+            // SECURITY RISK (documented): passwords are sent/stored in
+            // plaintext. Hash passwords (e.g., bcrypt) before persistence in
+            // a production system.
             supabaseService.registerAccount(name, email, password, dbRole, selection);
             showMessage("Account created successfully!", false);
             isRegisterSuccess = true;
@@ -99,6 +127,20 @@ public class RegisterController {
             e.printStackTrace();
             showMessage("Error: " + e.getMessage(), true);
         }
+    }
+
+    /**
+     * Basic password validation rule.
+     *
+     * @return true if the password meets the minimum rule, false otherwise
+     *         (an error message is shown to the user).
+     */
+    private boolean isValidPassword(String password) {
+        if (password.length() < 6) {
+            showMessage("Password must be at least 6 characters long.", true);
+            return false;
+        }
+        return true;
     }
 
     @FXML

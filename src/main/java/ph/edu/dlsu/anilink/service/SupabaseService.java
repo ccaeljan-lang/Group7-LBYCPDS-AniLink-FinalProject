@@ -555,6 +555,37 @@ public class SupabaseService {
                 .body(String.class);
     }
 
+    /**
+     * Checks Supabase BEFORE registration to prevent duplicate emails.
+     *
+     * <p>Note: this only detects emails already stored in the database. It
+     * does NOT verify email ownership or EAF. A {@code @dlsu.edu.ph} suffix
+     * check is only a format check, not proof the user owns the inbox. A real
+     * confirmation requires a properly configured and tested email/auth
+     * provider.</p>
+     *
+     * @param email the email address to check
+     * @return true if an account with this email already exists
+     */
+    public boolean emailExists(String email) {
+        try {
+            String response = restClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/users")
+                            .queryParam("email", "eq." + email.trim())
+                            .queryParam("select", "id")
+                            .build())
+                    .retrieve()
+                    .body(String.class);
+
+            JsonNode node = objectMapper.readTree(response);
+            return node != null && node.isArray() && node.size() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error checking duplicate email: " + e.getMessage(), e);
+        }
+    }
+
     public String createUser(java.util.Map<String, Object> userData) {
         return restClient.post()
                 .uri("/users")
