@@ -4,18 +4,27 @@ import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import org.springframework.stereotype.Controller;
 import ph.edu.dlsu.anilink.model.Reservation;
 import ph.edu.dlsu.anilink.model.User;
+import ph.edu.dlsu.anilink.service.BookingSummaryService;
 import ph.edu.dlsu.anilink.service.QRService;
+import ph.edu.dlsu.anilink.service.SupabaseService;
 import ph.edu.dlsu.anilink.util.UserSession;
 import ph.edu.dlsu.anilink.util.ViewNavigator;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 
 /**
  * JavaFX controller for displaying reservation details and their corresponding QR codes.
@@ -34,6 +43,9 @@ public class QRCodeController {
     private final QRService qrService;
     private final UserSession userSession;
     private final ViewNavigator viewNavigator;
+    private final BookingSummaryService bookingSummaryService;
+    private final SupabaseService supabaseService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @FXML private Label userNameLabel;
     @FXML private ImageView qrCode;
@@ -43,15 +55,21 @@ public class QRCodeController {
     @FXML private Label departureTime;
     @FXML private Label status;
     @FXML private Button back;
+    @FXML private Button downloadQR;
+    @FXML private Button downloadSummary;
 
     private Reservation reservation;
 
     public QRCodeController(QRService qrService,
                             UserSession userSession,
-                            ViewNavigator viewNavigator) {
+                            ViewNavigator viewNavigator,
+                            BookingSummaryService bookingSummaryService,
+                            SupabaseService supabaseService) {
         this.qrService = qrService;
         this.userSession = userSession;
         this.viewNavigator = viewNavigator;
+        this.bookingSummaryService = bookingSummaryService;
+        this.supabaseService = supabaseService;
     }
 
     @FXML
@@ -131,6 +149,105 @@ public class QRCodeController {
         });
 
         new Thread(task).start();
+    }
+
+    /**
+     * Downloads the displayed QR code image as a PNG file.
+     */
+    @FXML
+    private void downloadQRCode(ActionEvent event) {
+        if (qrCode.getImage() == null) {
+            showAlert("No QR Code", "There is no QR code to download.");
+            return;
+        }
+
+        Stage ownerStage = (Stage) qrCode.getScene().getWindow();
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save QR Code");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("PNG Image", "*.png"),
+                new FileChooser.ExtensionFilter("All Files", "*.*")
+        );
+        fileChooser.setInitialFileName("AniLink_QR_" +
+                (reservation != null && reservation.getReservationId() != null
+                        ? reservation.getReservationId() : "reservation") + ".png");
+
+        File file = fileChooser.showSaveDialog(ownerStage);
+        if (file != null) {
+            try {
+                BufferedImage bImage = SwingFXUtils.fromFXImage(qrCode.getImage(), null);
+                ImageIO.write(bImage, "png", file);
+                showAlert("QR Code Saved", "QR code saved to:\n" + file.getAbsolutePath());
+            } catch (IOException e) {
+                e.printStackTrace();
+                showAlert("Save Failed", "Failed to save QR code: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Downloads a booking confirmation summary text file for the current reservation.
+     * Fetches full reservation details from Supabase to ensure accuracy.
+     */
+    @FXML
+    private void downloadSummary(ActionEvent event) {
+        if (reservation == null || reservation.getReservationId() == null) {
+            showAlert("No Reservation", "There is no reservation to summarize.");
+            return;
+        }
+
+        Task<Reservation> task = new Task<>() {
+            @Override
+            protected Reservation call() throws Exception {
+                String json = supabaseService.getReservationFullDetails(reservation.getReservationId());
+                if (json == null || json.isBlank()) {
+                    throw new RuntimeException("No reservation data returned from Supabase.");
+                }
+
+                com.fasterxml.jackson.databind.JsonNode root =
+                        objectMapper.readTree(json);
+                if (!root.isArray() || root.isEmpty()) {
+                    throw new RuntimeException("Reservation not found in Supabase.");
+                }
+
+                com.fasterxml.jackson.databind.JsonNode node = root.get(0);
+                return objectMapper.treeToValue(node, Reservation.class);
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            Reservation fullReservation = task.getValue();
+            String summary = bookingSummaryService.generateSummary(fullReservation);
+
+            Stage ownerStage = (Stage) qrCode.getScene().getWindow();
+            bookingSummaryService.saveToFile(summary, ownerStage);
+
+            showAlert("Download Ready",
+                    "Booking summary for RES-" + fullReservation.getReservationId() +
+                            " is ready to save. Please choose a location.");
+        });
+
+        task.setOnFailed(e -> {
+            Throwable ex = task.getException();
+            if (ex != null) {
+                ex.printStackTrace();
+            }
+            showAlert("Download Failed",
+                    "Failed to download booking summary: " +
+                            (ex != null ? ex.getMessage() : "Unknown error"));
+        });
+
+        new Thread(task).start();
+    }
+
+    private void showAlert(String title, String message) {
+        javafx.application.Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle(title);
+            alert.setHeaderText(null);
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
     }
 
     // Sidebar Action Handlers

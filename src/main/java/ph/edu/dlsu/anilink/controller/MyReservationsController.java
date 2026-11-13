@@ -19,6 +19,7 @@ import ph.edu.dlsu.anilink.model.Reservation;
 import ph.edu.dlsu.anilink.model.Trip;
 import ph.edu.dlsu.anilink.model.TripFullException;
 import ph.edu.dlsu.anilink.model.User;
+import ph.edu.dlsu.anilink.service.BookingSummaryService;
 import ph.edu.dlsu.anilink.service.ReservationService;
 import ph.edu.dlsu.anilink.service.SupabaseService;
 import ph.edu.dlsu.anilink.util.UserSession;
@@ -45,6 +46,7 @@ public class MyReservationsController {
     private final UserSession userSession;
     private final ViewNavigator viewNavigator;
     private final ReservationService reservationService;
+    private final BookingSummaryService bookingSummaryService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @FXML private Label passengerNameLabel;
@@ -55,17 +57,20 @@ public class MyReservationsController {
     @FXML private TableColumn<ReservationItem, String> departureColumn;
     @FXML private TableColumn<ReservationItem, String> statusColumn;
     @FXML private TableColumn<ReservationItem, String> actionColumn;
+    @FXML private TableColumn<ReservationItem, String> downloadColumn;
 
     private final ObservableList<ReservationItem> reservationList = FXCollections.observableArrayList();
 
     public MyReservationsController(SupabaseService supabaseService,
                                     UserSession userSession,
                                     ViewNavigator viewNavigator,
-                                    ReservationService reservationService) {
+                                    ReservationService reservationService,
+                                    BookingSummaryService bookingSummaryService) {
         this.supabaseService = supabaseService;
         this.userSession = userSession;
         this.viewNavigator = viewNavigator;
         this.reservationService = reservationService;
+        this.bookingSummaryService = bookingSummaryService;
     }
 
     @FXML
@@ -104,6 +109,28 @@ public class MyReservationsController {
                     setGraphic(null);
                 } else {
                     setGraphic(repeatButton);
+                }
+            }
+        });
+
+        // Download column with a "Download Summary" button for each reservation row
+        downloadColumn.setCellFactory(param -> new TableCell<>() {
+            private final Button downloadButton = new Button("Download");
+
+            {
+                downloadButton.setOnAction(event -> {
+                    ReservationItem item = getTableView().getItems().get(getIndex());
+                    handleDownloadSummary(item);
+                });
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    setGraphic(downloadButton);
                 }
             }
         });
@@ -232,6 +259,64 @@ public class MyReservationsController {
                 ex.printStackTrace();
                 showAlert("Repeat Failed", "Failed to repeat reservation: " + ex.getMessage());
             }
+        });
+
+        new Thread(task).start();
+    }
+
+    /**
+     * Downloads a booking confirmation summary for the selected reservation.
+     * Fetches full reservation details from Supabase and generates a formatted
+     * text file that the passenger can save locally.
+     */
+    @FXML
+    private void handleDownloadSummary(ReservationItem item) {
+        if (item.getReservationId() == null) {
+            showAlert("Missing Reservation ID", "Unable to download summary: reservation ID is missing.");
+            return;
+        }
+
+        Task<Reservation> task = new Task<>() {
+            @Override
+            protected Reservation call() throws Exception {
+                String json = supabaseService.getReservationFullDetails(item.getReservationId());
+                if (json == null || json.isBlank()) {
+                    throw new RuntimeException("No reservation data returned from Supabase.");
+                }
+
+                com.fasterxml.jackson.databind.JsonNode root =
+                        objectMapper.readTree(json);
+                if (!root.isArray() || root.isEmpty()) {
+                    throw new RuntimeException("Reservation not found in Supabase.");
+                }
+
+                com.fasterxml.jackson.databind.JsonNode node = root.get(0);
+                Reservation reservation = objectMapper.treeToValue(node, Reservation.class);
+                return reservation;
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            Reservation reservation = task.getValue();
+            String summary = bookingSummaryService.generateSummary(reservation);
+
+            javafx.stage.Stage ownerStage =
+                    (javafx.stage.Stage) reservationTable.getScene().getWindow();
+            bookingSummaryService.saveToFile(summary, ownerStage);
+
+            showAlert("Download Ready",
+                    "Booking summary for RES-" + reservation.getReservationId() +
+                            " is ready to save. Please choose a location.");
+        });
+
+        task.setOnFailed(e -> {
+            Throwable ex = task.getException();
+            if (ex != null) {
+                ex.printStackTrace();
+            }
+            showAlert("Download Failed",
+                    "Failed to download booking summary: " +
+                            (ex != null ? ex.getMessage() : "Unknown error"));
         });
 
         new Thread(task).start();

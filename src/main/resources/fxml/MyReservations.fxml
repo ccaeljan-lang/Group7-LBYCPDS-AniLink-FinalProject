@@ -56,6 +56,7 @@
                         <TableColumn fx:id="departureColumn" prefWidth="130.0" text="Departure" />
                         <TableColumn fx:id="statusColumn" prefWidth="130.0" text="Status" />
                         <TableColumn fx:id="actionColumn" prefWidth="120.0" text="Action" />
+                        <TableColumn fx:id="downloadColumn" prefWidth="130.0" text="Download" />
                     </columns>
                     <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY" /></columnResizePolicy>
                 </TableView>

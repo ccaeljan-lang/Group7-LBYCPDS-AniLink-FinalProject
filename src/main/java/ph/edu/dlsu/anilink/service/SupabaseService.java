@@ -454,6 +454,22 @@ public class SupabaseService {
                 .body(String.class);
     }
 
+    /**
+     * Fetches a reservation with full nested details including passenger, trip,
+     * route, and schedule information for booking confirmation summaries.
+     */
+    public String getReservationFullDetails(Long id) {
+        return restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/reservations")
+                        .queryParam("id", "eq." + id)
+                        .queryParam("select",
+                                "*,passenger:users(*),trip:trips(*,route:routes(*),schedule:departure_schedules(*))")
+                        .build())
+                .retrieve()
+                .body(String.class);
+    }
+
     public String getRouteById(Long id) {
         return restClient.get()
                 .uri("/routes?id=eq." + id)
