@@ -38,8 +38,13 @@ public class WaitingListService {
      * or -1 if the passenger is not on the list.
      */
     public int getPosition(Long tripId, Long passengerId) {
+        System.out.println("DEBUG [WaitingListService] getPosition tripId=" + tripId
+                + ", passengerId=" + passengerId);
         WaitingListQueue queue = loadQueue(tripId);
-        return queue.positionOf(passengerId);
+        int pos = queue.positionOf(passengerId);
+        System.out.println("DEBUG [WaitingListService] getPosition result=" + pos
+                + ", queueSize=" + queue.size());
+        return pos;
     }
 
     /**
@@ -48,12 +53,17 @@ public class WaitingListService {
      * @return true if added, false if already on the list
      */
     public boolean joinWaitlist(Long tripId, Long passengerId, String passengerName) {
+        System.out.println("DEBUG [WaitingListService] joinWaitlist tripId=" + tripId
+                + ", passengerId=" + passengerId + ", name=" + passengerName);
+
         if (getPosition(tripId, passengerId) != -1) {
+            System.out.println("DEBUG [WaitingListService] joinWaitlist: already on list, returning false");
             return false;
         }
 
         try {
             supabaseService.createWaitingListEntry(tripId, passengerId);
+            System.out.println("DEBUG [WaitingListService] joinWaitlist: Supabase entry created");
 
             WaitingList entry = new WaitingList();
             entry.setTripId(tripId);
@@ -62,6 +72,8 @@ public class WaitingListService {
             entry.setStatus(WaitingList.STATUS_WAITING);
 
             queues.computeIfAbsent(tripId, k -> new WaitingListQueue()).enqueue(entry);
+            System.out.println("DEBUG [WaitingListService] joinWaitlist: added to queue, size="
+                    + queues.get(tripId).size());
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -75,8 +87,12 @@ public class WaitingListService {
      * @return true if removed, false if not found
      */
     public boolean cancelWaitlist(Long tripId, Long passengerId) {
-        WaitingListQueue queue = queues.get(tripId);
-        if (queue == null) {
+        System.out.println("DEBUG [WaitingListService] cancelWaitlist tripId=" + tripId
+                + ", passengerId=" + passengerId);
+
+        WaitingListQueue queue = loadQueue(tripId);
+        if (queue == null || queue.isEmpty()) {
+            System.out.println("DEBUG [WaitingListService] cancelWaitlist: queue empty or null");
             return false;
         }
 
@@ -91,12 +107,14 @@ public class WaitingListService {
         }
 
         if (toRemove == null) {
+            System.out.println("DEBUG [WaitingListService] cancelWaitlist: entry not found");
             return false;
         }
 
         boolean removed = queue.removePassenger(passengerId);
         if (removed && toRemove.getId() != null) {
             supabaseService.updateWaitingListStatus(toRemove.getId(), WaitingList.STATUS_CANCELLED);
+            System.out.println("DEBUG [WaitingListService] cancelWaitlist: removed and updated Supabase");
         }
         return removed;
     }
@@ -104,28 +122,37 @@ public class WaitingListService {
     /**
      * Promotes the next passenger in line.
      *
-     * <p>Removes the head of the FIFO queue, marks the entry as CONFIRMED in
-     * Supabase, and returns the promoted {@link WaitingList} entry. The caller
-     * is responsible for creating an actual reservation via
+     * <p>Loads the queue from Supabase if not in memory, removes the head of the
+     * FIFO queue, marks the entry as CONFIRMED in Supabase, and returns the
+     * promoted {@link WaitingList} entry. The caller is responsible for creating
+     * an actual reservation via
      * {@link ph.edu.dlsu.anilink.service.ReservationService#createReservation}.
      * </p>
      *
      * @return the promoted entry, or null if the queue is empty
      */
     public WaitingList promoteNext(Long tripId) {
-        WaitingListQueue queue = queues.get(tripId);
-        if (queue == null) {
+        System.out.println("DEBUG [WaitingListService] promoteNext tripId=" + tripId);
+
+        WaitingListQueue queue = loadQueue(tripId);
+        if (queue == null || queue.isEmpty()) {
+            System.out.println("DEBUG [WaitingListService] promoteNext: queue empty, no one to promote");
             return null;
         }
 
         WaitingList next = queue.dequeue();
         if (next == null) {
+            System.out.println("DEBUG [WaitingListService] promoteNext: dequeue returned null");
             return null;
         }
+
+        System.out.println("DEBUG [WaitingListService] promoteNext: promoting passengerId="
+                + next.getPassengerId() + " name=" + next.getPassengerName());
 
         next.setStatus(WaitingList.STATUS_CONFIRMED);
         if (next.getId() != null) {
             supabaseService.updateWaitingListStatus(next.getId(), WaitingList.STATUS_CONFIRMED);
+            System.out.println("DEBUG [WaitingListService] promoteNext: Supabase status updated to CONFIRMED");
         }
         return next;
     }
@@ -143,15 +170,20 @@ public class WaitingListService {
      */
     private WaitingListQueue loadQueue(Long tripId) {
         return queues.computeIfAbsent(tripId, k -> {
+            System.out.println("DEBUG [WaitingListService] loadQueue: loading tripId=" + tripId
+                    + " from Supabase (first time)");
             WaitingListQueue queue = new WaitingListQueue();
             try {
                 String json = supabaseService.getWaitingListByTrip(tripId);
                 if (json == null || json.isBlank()) {
+                    System.out.println("DEBUG [WaitingListService] loadQueue: empty response from Supabase");
                     return queue;
                 }
 
                 JsonNode root = objectMapper.readTree(json);
                 if (root.isArray()) {
+                    System.out.println("DEBUG [WaitingListService] loadQueue: found "
+                            + root.size() + " entries in Supabase");
                     for (JsonNode node : root) {
                         WaitingList entry = new WaitingList();
                         entry.setId(node.path("id").asLong());
@@ -165,6 +197,8 @@ public class WaitingListService {
 
                         entry.setStatus(node.path("status").asText(WaitingList.STATUS_WAITING));
                         queue.enqueue(entry);
+                        System.out.println("DEBUG [WaitingListService] loadQueue: loaded entry passengerId="
+                                + entry.getPassengerId() + " status=" + entry.getStatus());
                     }
                 }
             } catch (Exception e) {
