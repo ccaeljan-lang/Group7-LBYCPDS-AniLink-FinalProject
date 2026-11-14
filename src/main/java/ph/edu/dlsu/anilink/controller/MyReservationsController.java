@@ -57,6 +57,7 @@ public class MyReservationsController {
     @FXML private TableColumn<ReservationItem, String> statusColumn;
     @FXML private TableColumn<ReservationItem, String> actionColumn;
     @FXML private TableColumn<ReservationItem, String> downloadColumn;
+    @FXML private TableColumn<ReservationItem, String> cancelColumn;
 
     private final ObservableList<ReservationItem> reservationList = FXCollections.observableArrayList();
 
@@ -130,6 +131,30 @@ public class MyReservationsController {
                     setGraphic(null);
                 } else {
                     setGraphic(downloadButton);
+                }
+            }
+        });
+
+        // Cancel column with a "Cancel" button for each reservation row
+        cancelColumn.setCellFactory(param -> new TableCell<>() {
+            private final Button cancelButton = new Button("Cancel");
+
+            {
+                cancelButton.setOnAction(event -> {
+                    ReservationItem item = getTableView().getItems().get(getIndex());
+                    handleCancelReservation(item);
+                });
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    // Only show Cancel for non-cancelled reservations
+                    ReservationItem ri = getTableView().getItems().get(getIndex());
+                    setGraphic("CANCELLED".equalsIgnoreCase(ri.getStatus()) ? null : cancelButton);
                 }
             }
         });
@@ -319,6 +344,60 @@ public class MyReservationsController {
         });
 
         new Thread(task).start();
+    }
+
+    /**
+     * Cancels the selected reservation from the passenger's standpoint.
+     * Marks it as CANCELLED, frees up the seat, and promotes the next
+     * waiting passenger if one exists.
+     */
+    @FXML
+    private void handleCancelReservation(ReservationItem item) {
+        if (item.getReservationId() == null) {
+            showAlert("Missing Reservation ID", "Unable to cancel: reservation ID is missing.");
+            return;
+        }
+
+        if ("CANCELLED".equalsIgnoreCase(item.getStatus())) {
+            showAlert("Already Cancelled", "This reservation is already cancelled.");
+            return;
+        }
+
+        // Confirm before cancelling
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Cancel Reservation");
+        confirm.setHeaderText("Cancel Reservation " + item.getReservationCode() + "?");
+        confirm.setContentText("This will free up your seat on the trip. The next waiting passenger may be automatically assigned.");
+
+        java.util.Optional<ButtonType> result = confirm.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            Task<Reservation> task = new Task<>() {
+                @Override
+                protected Reservation call() throws Exception {
+                    return reservationService.cancelReservation(item.getReservationId());
+                }
+            };
+
+            task.setOnSucceeded(e -> {
+                Reservation cancelled = task.getValue();
+                showAlert("Reservation Cancelled",
+                        "Your reservation " + cancelled.getReservationId() +
+                                " has been cancelled successfully. Your seat has been released.");
+                loadReservationsAsync();
+            });
+
+            task.setOnFailed(e -> {
+                Throwable ex = task.getException();
+                if (ex != null) {
+                    ex.printStackTrace();
+                }
+                showAlert("Cancel Failed",
+                        "Failed to cancel reservation: " +
+                                (ex != null ? ex.getMessage() : "Unknown error"));
+            });
+
+            new Thread(task).start();
+        }
     }
 
     private void showAlert(String title, String message) {
