@@ -712,4 +712,37 @@ public class SupabaseService {
                 .retrieve()
                 .toBodilessEntity();
     }
+
+    /**
+     * Recalculates and updates seats_taken for a trip based on actual active
+     * reservations in Supabase. Use this to fix mismatched seat counts.
+     */
+    public void syncSeatsTaken(Long tripId) {
+        try {
+            String json = restClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/reservations")
+                            .queryParam("trip_id", "eq." + tripId)
+                            .queryParam("status", "in.(WAITLISTED,CONFIRMED,VERIFIED,BOARDED)")
+                            .queryParam("select", "id")
+                            .build())
+                    .retrieve()
+                    .body(String.class);
+
+            com.fasterxml.jackson.databind.JsonNode root =
+                    objectMapper.readTree(json);
+            int count = (root != null && root.isArray()) ? root.size() : 0;
+
+            restClient.patch()
+                    .uri("/trips?id=eq." + tripId)
+                    .body(java.util.Map.of("seats_taken", count))
+                    .retrieve()
+                    .toBodilessEntity();
+
+            System.out.println("DEBUG [Supabase] synced seats_taken for tripId=" + tripId +
+                    " -> " + count);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

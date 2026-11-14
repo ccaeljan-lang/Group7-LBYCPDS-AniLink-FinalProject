@@ -233,6 +233,11 @@ public class ReservationController {
         currentTrip.setCapacity(currentCapacity);
         currentTrip.setSeatsTaken(currentSeatsTaken);
 
+        System.out.println("DEBUG [Reservation] tripId=" + selectedTripId +
+                ", capacity=" + currentCapacity +
+                ", seatsTaken=" + currentSeatsTaken +
+                ", isFull=" + currentTrip.isFull());
+
         reserveButton.setDisable(true);
         showMessage("Processing reservation...", "#0284C7");
 

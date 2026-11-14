@@ -276,6 +276,44 @@ public class TripManagementController {
         });
     }
 
+    /**
+     * Syncs seats_taken for the selected trip based on actual active reservations.
+     * Fixes mismatched seat counts (e.g., when a cancelled reservation didn't
+     * decrement seats_taken).
+     */
+    @FXML
+    private void handleSyncSeats() {
+        Trip selectedTrip = tripListView.getSelectionModel().getSelectedItem();
+
+        if (selectedTrip == null) {
+            showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a trip from the list to sync seats.");
+            return;
+        }
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                supabaseService.syncSeatsTaken(selectedTrip.getTripId());
+                return null;
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            showAlert("Seats Synced", "Seats taken for Trip #" + selectedTrip.getTripId() +
+                    " has been recalculated from active reservations.");
+            loadTripsAsync();
+        });
+
+        task.setOnFailed(e -> {
+            if (e.getException() != null) {
+                e.getException().printStackTrace();
+            }
+            showAlert("Sync Failed", "Failed to sync seats taken.");
+        });
+
+        new Thread(task).start();
+    }
+
     // --- Async Data Loaders ---
 
     private void loadRoutesAsync() {

@@ -130,6 +130,7 @@
                         <Button onAction="#handleUpdateStatus" text="Update Status" prefHeight="30" style="-fx-background-color: #0d5c36; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand;"/>
 
                         <Button onAction="#handleDeleteTrip" text="Delete Selected" prefHeight="30" style="-fx-background-color: #FFFFFF; -fx-text-fill: #DC2626; -fx-border-color: #DC2626; -fx-border-radius: 6; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;"/>
+                        <Button onAction="#handleSyncSeats" text="Sync Seats Taken" prefHeight="30" style="-fx-background-color: #FFFFFF; -fx-text-fill: #0d5c36; -fx-border-color: #0d5c36; -fx-border-radius: 6; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;"/>
                     </HBox>
 
                     <ListView fx:id="tripListView" VBox.vgrow="ALWAYS" style="-fx-border-color: #E2E8F0; -fx-border-radius: 6px; -fx-background-radius: 6px;"/>
