@@ -1,5 +1,6 @@
 package ph.edu.dlsu.anilink.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 
@@ -17,6 +18,7 @@ import java.util.Objects;
  * </ul>
  * </p>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Route {
 
     @JsonProperty("id")

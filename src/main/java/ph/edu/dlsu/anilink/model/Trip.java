@@ -1,6 +1,7 @@
 package ph.edu.dlsu.anilink.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import ph.edu.dlsu.anilink.interfaces.Trackable;
 
@@ -24,6 +25,7 @@ import java.util.Objects;
  * </ul>
  * </p>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Trip implements Trackable {
 
     public static final String SCHEDULED = "SCHEDULED";
