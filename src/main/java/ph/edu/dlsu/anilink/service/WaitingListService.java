@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import ph.edu.dlsu.anilink.model.WaitingList;
-import ph.edu.dlsu.anilink.queue.WaitingListQueue;
+import ph.edu.dlsu.anilink.dsa.WaitingListQueue;
 
 import java.util.ArrayList;
 import java.util.HashMap;

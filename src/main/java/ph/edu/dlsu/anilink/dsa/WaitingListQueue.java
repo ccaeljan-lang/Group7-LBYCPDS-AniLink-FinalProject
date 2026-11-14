@@ -1,4 +1,4 @@
-package ph.edu.dlsu.anilink.queue;
+package ph.edu.dlsu.anilink.dsa;
 
 import ph.edu.dlsu.anilink.model.WaitingList;
 

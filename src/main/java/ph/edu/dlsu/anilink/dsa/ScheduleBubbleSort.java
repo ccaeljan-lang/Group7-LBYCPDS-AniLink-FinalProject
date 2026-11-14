@@ -1,5 +1,4 @@
-
-package ph.edu.dlsu.anilink.sorting;
+package ph.edu.dlsu.anilink.dsa;
 
 import ph.edu.dlsu.anilink.model.DepartureSchedule;
 
@@ -9,12 +8,11 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * feat: Sort departure schedules chronologically using Bubble Sort.
+ * Sort departure schedules chronologically using Bubble Sort.
  *
  * Average and worst-case complexity: O(n^2)
  * Best-case complexity: O(n) with early termination
  */
-
 public final class ScheduleBubbleSort {
 
     private ScheduleBubbleSort() {

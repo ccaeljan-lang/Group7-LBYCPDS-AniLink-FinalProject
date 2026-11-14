@@ -19,7 +19,7 @@ import ph.edu.dlsu.anilink.model.DepartureSchedule;
 import ph.edu.dlsu.anilink.model.Route;
 import ph.edu.dlsu.anilink.model.User;
 import ph.edu.dlsu.anilink.service.SupabaseService;
-import ph.edu.dlsu.anilink.sorting.ScheduleBubbleSort;
+import ph.edu.dlsu.anilink.dsa.ScheduleBubbleSort;
 import ph.edu.dlsu.anilink.util.UserSession;
 import ph.edu.dlsu.anilink.util.ViewNavigator;
 
