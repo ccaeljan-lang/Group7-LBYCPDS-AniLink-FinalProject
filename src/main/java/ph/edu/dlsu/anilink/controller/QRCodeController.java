@@ -10,6 +10,7 @@ import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.springframework.stereotype.Controller;
@@ -45,7 +46,8 @@ public class QRCodeController {
     private final ViewNavigator viewNavigator;
     private final BookingSummaryService bookingSummaryService;
     private final SupabaseService supabaseService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
 
     @FXML private Label userNameLabel;
     @FXML private ImageView qrCode;

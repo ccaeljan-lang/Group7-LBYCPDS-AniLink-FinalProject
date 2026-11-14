@@ -2,6 +2,7 @@ package ph.edu.dlsu.anilink.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -41,7 +42,8 @@ public class MyReservationsController {
     private final ViewNavigator viewNavigator;
     private final ReservationService reservationService;
     private final BookingSummaryService bookingSummaryService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
 
     @FXML private Label passengerNameLabel;
     @FXML private TableView<ReservationItem> reservationTable;
