@@ -7,6 +7,7 @@ import ph.edu.dlsu.anilink.model.Reservation;
 import ph.edu.dlsu.anilink.model.Trip;
 import ph.edu.dlsu.anilink.model.TripFullException;
 import ph.edu.dlsu.anilink.model.User;
+import ph.edu.dlsu.anilink.model.WaitingList;
 
 import java.util.List;
 import java.util.UUID;
@@ -215,6 +216,121 @@ public class ReservationService {
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to repeat reservation: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Cancels a reservation from the passenger's standpoint.
+     *
+     * <p>Marks the reservation as CANCELLED in Supabase, decrements the trip's
+     * {@code seats_taken} count, and promotes the next waiting passenger (if any)
+     * into the freed seat.</p>
+     *
+     * @param reservationId the ID of the reservation to cancel
+     * @return the cancelled {@link Reservation}
+     * @throws IllegalStateException if the reservation cannot be found or is already cancelled
+     */
+    public Reservation cancelReservation(Long reservationId) {
+        if (reservationId == null) {
+            throw new IllegalArgumentException("Reservation ID is required.");
+        }
+
+        try {
+            // 1. Fetch the reservation to get trip info and current status
+            String json = supabaseService.getReservationById(reservationId);
+            List<Reservation> reservations = objectMapper.readValue(
+                    json,
+                    new TypeReference<List<Reservation>>() {}
+            );
+
+            if (reservations == null || reservations.isEmpty()) {
+                throw new IllegalStateException("Reservation not found.");
+            }
+
+            Reservation existing = reservations.get(0);
+
+            if (Reservation.CANCELLED.equalsIgnoreCase(existing.getStatus())) {
+                throw new IllegalStateException("This reservation is already cancelled.");
+            }
+
+            Long tripId = existing.getTrip() != null ? existing.getTrip().getTripId() : null;
+
+            // 2. Mark reservation as CANCELLED in Supabase
+            supabaseService.updateReservationStatus(reservationId, Reservation.CANCELLED);
+
+            // 3. Decrement seats_taken on the trip
+            if (tripId != null) {
+                int currentSeatsTaken = existing.getTrip() != null
+                        ? existing.getTrip().getSeatsTaken()
+                        : 0;
+                int updatedSeats = Math.max(0, currentSeatsTaken - 1);
+                supabaseService.updateTripSeatsTaken(tripId, updatedSeats);
+
+                // 4. Promote the next waiting passenger into the freed seat
+                WaitingList promoted = waitingListService.promoteNext(tripId);
+                if (promoted != null && promoted.getPassengerId() != null) {
+                    try {
+                        String userJson = supabaseService.getUserById(promoted.getPassengerId());
+                        com.fasterxml.jackson.databind.JsonNode userNode =
+                                objectMapper.readTree(userJson);
+                        if (userNode.isArray() && !userNode.isEmpty()) {
+                            com.fasterxml.jackson.databind.JsonNode u = userNode.get(0);
+                            String role = u.path("role").asText("PASSENGER");
+                            User passenger;
+                            switch (role.toUpperCase()) {
+                                case "DRIVER":
+                                    passenger = new ph.edu.dlsu.anilink.model.Driver(
+                                            u.path("id").asLong(),
+                                            u.path("name").asText(),
+                                            u.path("email").asText(),
+                                            u.path("password").asText(),
+                                            u.path("license_number").asText(null)
+                                    );
+                                    break;
+                                case "ADMINISTRATOR":
+                                case "ADMIN":
+                                    passenger = new ph.edu.dlsu.anilink.model.Administrator(
+                                            u.path("id").asLong(),
+                                            u.path("name").asText(),
+                                            u.path("email").asText(),
+                                            u.path("password").asText(),
+                                            u.path("department").asText(null)
+                                    );
+                                    break;
+                                default:
+                                    passenger = new ph.edu.dlsu.anilink.model.Passenger(
+                                            u.path("id").asLong(),
+                                            u.path("name").asText(),
+                                            u.path("email").asText(),
+                                            u.path("password").asText(),
+                                            u.path("category").asText(null)
+                                    );
+                                    break;
+                            }
+
+                            Trip trip = new Trip();
+                            trip.setTripId(tripId);
+                            trip.setCapacity(existing.getTrip() != null ? existing.getTrip().getCapacity() : 0);
+                            trip.setSeatsTaken(updatedSeats);
+                            trip.setStatus(existing.getTrip() != null ? existing.getTrip().getStatus() : "SCHEDULED");
+
+                            createReservation(passenger, trip);
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        // Promotion failure should not roll back the cancellation
+                    }
+                }
+            }
+
+            existing.cancel();
+            return existing;
+
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to cancel reservation: " + e.getMessage(), e);
         }
     }
 }
