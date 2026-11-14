@@ -1,6 +1,7 @@
 package ph.edu.dlsu.anilink.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDateTime;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
  * </ul>
  * </p>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Reservation {
 
     public static final String CONFIRMED = "CONFIRMED";
