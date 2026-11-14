@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * Domain model representing a passenger reservation within the AniLink system.
@@ -45,7 +45,7 @@ public class Reservation {
 
     @JsonProperty("created_at")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @JsonProperty("status")
     private String status;
@@ -62,7 +62,7 @@ public class Reservation {
         this.reservationId = reservationId;
         this.passenger = passenger;
         this.trip = trip;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = OffsetDateTime.now();
         this.status = WAITLISTED;
         this.qrPayload = "ANILINK-RES-" + reservationId;
     }
@@ -111,11 +111,11 @@ public class Reservation {
         this.trip = trip;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(OffsetDateTime createdAt) {
         this.createdAt = createdAt;
     }
 
