@@ -299,16 +299,16 @@ public class TripManagementController {
         };
 
         task.setOnSucceeded(e -> {
-            showAlert("Seats Synced", "Seats taken for Trip #" + selectedTrip.getTripId() +
+            showAlert(Alert.AlertType.INFORMATION, "Seats Synced", "Seats taken for Trip #" + selectedTrip.getTripId() +
                     " has been recalculated from active reservations.");
             loadTripsAsync();
         });
 
         task.setOnFailed(e -> {
-            if (e.getException() != null) {
-                e.getException().printStackTrace();
+            if (task.getException() != null) {
+                task.getException().printStackTrace();
             }
-            showAlert("Sync Failed", "Failed to sync seats taken.");
+            showAlert(Alert.AlertType.ERROR, "Sync Failed", "Failed to sync seats taken.");
         });
 
         new Thread(task).start();
