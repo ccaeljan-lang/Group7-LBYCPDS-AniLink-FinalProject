@@ -1,6 +1,7 @@
 package ph.edu.dlsu.anilink.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -16,6 +17,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * </ul>
  * </p>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Driver extends User {
 
     private String licenseNumber;
