@@ -2,6 +2,7 @@ package ph.edu.dlsu.anilink.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.stereotype.Service;
 import ph.edu.dlsu.anilink.model.Reservation;
 import ph.edu.dlsu.anilink.model.Trip;
@@ -32,7 +33,8 @@ public class ReservationService {
     private final SupabaseService supabaseService;
     private final BookingValidationService bookingValidationService;
     private final WaitingListService waitingListService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
 
     public ReservationService(
             SupabaseService supabaseService,
