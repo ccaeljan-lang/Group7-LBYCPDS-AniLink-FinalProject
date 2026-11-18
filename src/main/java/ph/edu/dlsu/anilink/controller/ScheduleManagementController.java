@@ -379,6 +379,7 @@ public class ScheduleManagementController extends AbstractAdminController {
                 || capacityText.isEmpty()) {
 
             showInlineStatus(
+                    statusLabel,
                     "Please fill in all fields.",
                     "#DC2626"
             );
@@ -390,6 +391,7 @@ public class ScheduleManagementController extends AbstractAdminController {
         if (creatingSchedule) {
 
             showInlineStatus(
+                    statusLabel,
                     "Please wait, a schedule is being created.",
                     "#0284C7"
             );
@@ -416,6 +418,7 @@ public class ScheduleManagementController extends AbstractAdminController {
             if (capacity <= 0) {
 
                 showInlineStatus(
+                        statusLabel,
                         "Capacity must be greater than 0.",
                         "#DC2626"
                 );
@@ -424,6 +427,7 @@ public class ScheduleManagementController extends AbstractAdminController {
             }
 
             showInlineStatus(
+                    statusLabel,
                     "Adding schedule...",
                     "#0284C7"
             );
@@ -469,6 +473,7 @@ public class ScheduleManagementController extends AbstractAdminController {
                 if ("DUPLICATE".equals(outcome)) {
 
                     showInlineStatus(
+                            statusLabel,
                             "A schedule for this route and time already exists.",
                             "#DC2626"
                     );
@@ -486,6 +491,7 @@ public class ScheduleManagementController extends AbstractAdminController {
                 }
 
                 showInlineStatus(
+                        statusLabel,
                         "Schedule created successfully!",
                         "#16A34A"
                 );
@@ -508,6 +514,7 @@ public class ScheduleManagementController extends AbstractAdminController {
                 error.printStackTrace();
 
                 showInlineStatus(
+                        statusLabel,
                         "Failed to create schedule.",
                         "#DC2626"
                 );
@@ -529,6 +536,7 @@ public class ScheduleManagementController extends AbstractAdminController {
         } catch (NumberFormatException e) {
 
             showInlineStatus(
+                    statusLabel,
                     "Capacity must be a number.",
                     "#DC2626"
             );
@@ -536,6 +544,7 @@ public class ScheduleManagementController extends AbstractAdminController {
         } catch (DateTimeParseException e) {
 
             showInlineStatus(
+                    statusLabel,
                     "Use 24h time format (e.g., 08:30 or 14:00).",
                     "#DC2626"
             );
@@ -598,6 +607,7 @@ public class ScheduleManagementController extends AbstractAdminController {
             task.setOnSucceeded(e -> {
 
                 showInlineStatus(
+                        statusLabel,
                         "Schedule deleted.",
                         "#16A34A"
                 );
