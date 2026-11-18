@@ -8,7 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import ph.edu.dlsu.anilink.model.*;
-
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -199,7 +199,14 @@ public class SupabaseService {
                         java.util.Map.of(
                                 "id", schedule.getScheduleId(),
                                 "route_id", schedule.getRoute().getRouteId(),
-                                "departure_time", schedule.getDepartureTime().toString(),
+                                "departure_date",
+                                schedule.getDepartureDate() != null
+                                        ? schedule.getDepartureDate().toString()
+                                        : null,
+                                "departure_time",
+                                schedule.getDepartureTime() != null
+                                        ? schedule.getDepartureTime().toString()
+                                        : null,
                                 "capacity", schedule.getCapacity()
                         )
                 )
@@ -214,21 +221,28 @@ public class SupabaseService {
                 .body(String.class);
     }
 
-    // REPLACES THE OLD registerPassenger METHOD
-    public String registerAccount(String name, String email, String password, String role, String extraDetail) {
+
+    public String registerAccount(String name, String email,
+                                  String password, String role,
+                                  String extraDetail, String idNumber) {
+
         java.util.Map<String, Object> payload = new java.util.HashMap<>();
+
         payload.put("name", name);
         payload.put("email", email);
         payload.put("password", password);
         payload.put("role", role);
 
-        // Map the extra detail to the correct column so findUserByEmail doesn't crash later
         if ("PASSENGER".equalsIgnoreCase(role)) {
-            payload.put("category", "PASSENGER"); // Students and faculty have the same category
+            payload.put("category", "PASSENGER");
+            payload.put("id_number", idNumber);
+
         } else if ("DRIVER".equalsIgnoreCase(role)) {
-            payload.put("license_number", "PENDING-" + System.currentTimeMillis()); // Default placeholder license
+            payload.put("license_number",
+                    "PENDING-" + System.currentTimeMillis());
+
         } else if ("ADMINISTRATOR".equalsIgnoreCase(role)) {
-            payload.put("admin_level", "STANDARD"); // Default admin level
+            payload.put("admin_level", "STANDARD");
         }
 
         return restClient.post()
@@ -238,6 +252,7 @@ public class SupabaseService {
                 .retrieve()
                 .body(String.class);
     }
+
 
     public String getTrips() {
         return restClient.get()
@@ -372,19 +387,22 @@ public class SupabaseService {
     /**
      * Checks Supabase BEFORE insert to prevent duplicate departure schedules.
      *
-     * <p>The same {@code route_id} + {@code departure_time} must not exist
-     * twice. The same departure time on a DIFFERENT route IS allowed.</p>
+     * <p>The same {@code route_id} + {@code departure_date} + {@code departure_time}
+     * must not exist twice. The same departure time on a DIFFERENT route or
+     * DIFFERENT date IS allowed.</p>
      *
      * @param routeId       the route ID
+     * @param departureDate the departure date in yyyy-MM-dd format
      * @param departureTime the departure time in HH:mm:ss format
      * @return true if a matching schedule already exists in Supabase
      */
-    public boolean scheduleExists(Long routeId, String departureTime) {
+    public boolean scheduleExists(Long routeId, String departureDate, String departureTime) {
         try {
             String response = restClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .path("/departure_schedules")
                             .queryParam("route_id", "eq." + routeId)
+                            .queryParam("departure_date", "eq." + departureDate)
                             .queryParam("departure_time", "eq." + departureTime)
                             .queryParam("select", "id")
                             .build())
@@ -405,6 +423,21 @@ public class SupabaseService {
                 .header("Prefer", "return=representation")
                 .body(java.util.Map.of(
                         "route_id", routeId,
+                        "departure_time", departureTime,
+                        "capacity", capacity
+                ))
+                .retrieve()
+                .body(String.class);
+    }
+
+    public String createSchedule(Long routeId, String departureDate,
+                                 String departureTime, int capacity) {
+        return restClient.post()
+                .uri("/departure_schedules")
+                .header("Prefer", "return=representation")
+                .body(java.util.Map.of(
+                        "route_id", routeId,
+                        "departure_date", departureDate,
                         "departure_time", departureTime,
                         "capacity", capacity
                 ))
@@ -583,6 +616,31 @@ public class SupabaseService {
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Error checking duplicate email: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Checks Supabase BEFORE registration to prevent duplicate DLSU ID numbers.
+     *
+     * @param idNumber the DLSU ID number to check
+     * @return true if an account with this ID number already exists
+     */
+    public boolean idNumberExists(String idNumber) {
+        try {
+            String response = restClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/users")
+                            .queryParam("id_number", "eq." + idNumber.trim())
+                            .queryParam("select", "id")
+                            .build())
+                    .retrieve()
+                    .body(String.class);
+
+            JsonNode node = objectMapper.readTree(response);
+            return node != null && node.isArray() && node.size() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error checking duplicate ID number: " + e.getMessage(), e);
         }
     }
 
