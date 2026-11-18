@@ -90,6 +90,7 @@ public class MyReservationsController {
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
 
         // Action column with a "Repeat" button for each reservation row
+        // Hidden for cancelled or completed reservations
         actionColumn.setCellFactory(param -> new TableCell<>() {
             private final Button repeatButton = new Button("Repeat");
 
@@ -106,12 +107,17 @@ public class MyReservationsController {
                 if (empty) {
                     setGraphic(null);
                 } else {
-                    setGraphic(repeatButton);
+                    ReservationItem ri = getTableView().getItems().get(getIndex());
+                    String status = ri.getStatus() != null ? ri.getStatus() : "";
+                    boolean isActive = !"CANCELLED".equalsIgnoreCase(status)
+                            && !"COMPLETED".equalsIgnoreCase(status);
+                    setGraphic(isActive ? repeatButton : null);
                 }
             }
         });
 
         // Download column with a "Download Summary" button for each reservation row
+        // Hidden for cancelled or completed reservations
         downloadColumn.setCellFactory(param -> new TableCell<>() {
             private final Button downloadButton = new Button("Download");
 
@@ -128,12 +134,17 @@ public class MyReservationsController {
                 if (empty) {
                     setGraphic(null);
                 } else {
-                    setGraphic(downloadButton);
+                    ReservationItem ri = getTableView().getItems().get(getIndex());
+                    String status = ri.getStatus() != null ? ri.getStatus() : "";
+                    boolean isActive = !"CANCELLED".equalsIgnoreCase(status)
+                            && !"COMPLETED".equalsIgnoreCase(status);
+                    setGraphic(isActive ? downloadButton : null);
                 }
             }
         });
 
         // Cancel column with a "Cancel" button for each reservation row
+        // Hidden for cancelled or completed reservations
         cancelColumn.setCellFactory(param -> new TableCell<>() {
             private final Button cancelButton = new Button("Cancel");
 
@@ -150,9 +161,11 @@ public class MyReservationsController {
                 if (empty) {
                     setGraphic(null);
                 } else {
-                    // Only show Cancel for non-cancelled reservations
                     ReservationItem ri = getTableView().getItems().get(getIndex());
-                    setGraphic("CANCELLED".equalsIgnoreCase(ri.getStatus()) ? null : cancelButton);
+                    String status = ri.getStatus() != null ? ri.getStatus() : "";
+                    boolean isActive = !"CANCELLED".equalsIgnoreCase(status)
+                            && !"COMPLETED".equalsIgnoreCase(status);
+                    setGraphic(isActive ? cancelButton : null);
                 }
             }
         });
@@ -298,6 +311,16 @@ public class MyReservationsController {
             return;
         }
 
+        String status = item.getStatus() != null ? item.getStatus() : "";
+        if ("CANCELLED".equalsIgnoreCase(status)) {
+            showAlert("Cancelled Reservation", "Cannot download summary for a cancelled reservation.");
+            return;
+        }
+        if ("COMPLETED".equalsIgnoreCase(status)) {
+            showAlert("Completed Reservation", "Cannot download summary for a completed reservation.");
+            return;
+        }
+
         Task<Reservation> task = new Task<>() {
             @Override
             protected Reservation call() throws Exception {
@@ -356,8 +379,13 @@ public class MyReservationsController {
             return;
         }
 
-        if ("CANCELLED".equalsIgnoreCase(item.getStatus())) {
+        String status = item.getStatus() != null ? item.getStatus() : "";
+        if ("CANCELLED".equalsIgnoreCase(status)) {
             showAlert("Already Cancelled", "This reservation is already cancelled.");
+            return;
+        }
+        if ("COMPLETED".equalsIgnoreCase(status)) {
+            showAlert("Trip Completed", "This reservation has already been completed and cannot be cancelled.");
             return;
         }
 
