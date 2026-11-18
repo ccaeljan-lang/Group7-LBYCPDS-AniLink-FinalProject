@@ -1,5 +1,6 @@
 package ph.edu.dlsu.anilink.service;
 
+import org.springframework.stereotype.Service;
 import ph.edu.dlsu.anilink.model.Reservation;
 
 import java.awt.Color;

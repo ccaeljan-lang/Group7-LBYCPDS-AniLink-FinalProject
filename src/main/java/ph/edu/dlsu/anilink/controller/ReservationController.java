@@ -6,14 +6,12 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
-import javafx.scene.image.ImageView;
 import javafx.scene.image.Image;
 import org.springframework.stereotype.Controller;
 import ph.edu.dlsu.anilink.model.Reservation;
@@ -27,8 +25,6 @@ import ph.edu.dlsu.anilink.service.ReservationService;
 import ph.edu.dlsu.anilink.service.SupabaseService;
 import ph.edu.dlsu.anilink.util.UserSession;
 import ph.edu.dlsu.anilink.util.ViewNavigator;
-
-import java.awt.image.BufferedImage;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -255,15 +251,12 @@ public class ReservationController {
             availableSeats.setText("Available Seats: " + Math.max(0, currentCapacity - currentSeatsTaken - 1));
             showMessage("Reservation successful!", "#16A34A");
 
-            // Generate QR Code image from the reservation payload
-            BufferedImage bufferedImage = qrService.generateQRCodeImage(reservation.getQrPayload(), 250, 250);
-            Image qrImage = bufferedImage != null ? SwingFXUtils.toFXImage(bufferedImage, null) : null;
-
-            // Pop up the generated QR code dialog
-            showQRCodePopup(qrImage, reservation.getQrPayload());
-
             // Clear selected schedule
             scheduleSelection.setValue(null);
+
+            showMessage("Booking reservation summary and proof (RES-" +
+                    reservation.getReservationId() +
+                    ") can be saved in My Reservations.", "#16A34A");
         });
 
         task.setOnFailed(e -> {
@@ -351,24 +344,6 @@ public class ReservationController {
             });
             new Thread(waitlistTask).start();
         }
-    }
-
-    private void showQRCodePopup(Image qrImage, String payload) {
-        Platform.runLater(() -> {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Reservation Confirmed");
-            alert.setHeaderText("Your Boarding Pass QR Code");
-            alert.setContentText("Present this QR code to the driver upon boarding.\n\nTicket Code: " + payload);
-
-            if (qrImage != null) {
-                ImageView imageView = new ImageView(qrImage);
-                imageView.setFitWidth(250);
-                imageView.setFitHeight(250);
-                alert.setGraphic(imageView);
-            }
-
-            alert.showAndWait();
-        });
     }
 
     private void showMessage(String message, String colorCode) {

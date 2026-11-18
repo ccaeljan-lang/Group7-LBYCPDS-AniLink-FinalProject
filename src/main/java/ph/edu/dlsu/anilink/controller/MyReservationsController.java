@@ -326,9 +326,9 @@ public class MyReservationsController {
                     (javafx.stage.Stage) reservationTable.getScene().getWindow();
             bookingSummaryService.saveToFile(summaryImage, ownerStage);
 
-            showAlert("Download Ready",
-                    "Booking summary image for RES-" + reservation.getReservationId() +
-                            " is ready to save. Please choose a location.");
+            showAlert("Booking Summary Saved",
+                    "Your booking summary and proof (RES-" + reservation.getReservationId() +
+                            ") has been saved successfully. You can view and download it again from My Reservations.");
         });
 
         task.setOnFailed(e -> {

@@ -224,9 +224,9 @@ public class QRCodeController {
             Stage ownerStage = (Stage) qrCode.getScene().getWindow();
             bookingSummaryService.saveToFile(summaryImage, ownerStage);
 
-            showAlert("Download Ready",
-                    "Booking summary image for RES-" + fullReservation.getReservationId() +
-                            " is ready to save. Please choose a location.");
+            showAlert("Booking Summary Saved",
+                    "Your booking summary and proof (RES-" + fullReservation.getReservationId() +
+                            ") has been saved successfully. You can view and download it again from My Reservations.");
         });
 
         task.setOnFailed(e -> {
