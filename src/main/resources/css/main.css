@@ -131,3 +131,21 @@
     -fx-padding: 5 15;
     -fx-cursor: hand;
 }
+
+.seats-visual-taken {
+    -fx-arc-height: 5;
+    -fx-arc-width: 5;
+    -fx-smooth: true;
+    -fx-fill: #029c53;
+    -fx-stroke: #006633;
+    -fx-stroke-width: 1.5;
+}
+
+.seats-visual-empty {
+    -fx-arc-height: 5;
+    -fx-arc-width: 5;
+    -fx-smooth: true;
+    -fx-fill: #d0d2d8;
+    -fx-stroke: #b0b0b3;
+    -fx-stroke-width: 1.5;
+}

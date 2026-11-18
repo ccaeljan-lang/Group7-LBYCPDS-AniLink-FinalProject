@@ -12,7 +12,9 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
-import javafx.scene.image.Image;
+import javafx.scene.layout.TilePane;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import org.springframework.stereotype.Controller;
 import ph.edu.dlsu.anilink.model.Reservation;
 import ph.edu.dlsu.anilink.model.Route;
@@ -62,6 +64,7 @@ public class ReservationController {
     @FXML private Label tripStatus;
     @FXML private Button reserveButton;
     @FXML private Label reservationMessage;
+    @FXML private TilePane seatsVisualPane;
 
     private final Map<String, Route> routeMap = new HashMap<>();
     private final Map<String, TripDetails> tripMap = new HashMap<>();
@@ -93,6 +96,8 @@ public class ReservationController {
 
         setupListeners();
         loadRoutesAsync();
+
+        seatsVisualPane.getChildren().clear();
     }
 
     private void setupListeners() {
@@ -101,6 +106,7 @@ public class ReservationController {
             dateSelection.setValue(null);
             scheduleSelection.getItems().clear();
             resetTripDetails();
+            seatsVisualPane.getChildren().clear();
         });
 
         // When date changes, load available trips if route is selected
@@ -111,6 +117,7 @@ public class ReservationController {
                     loadTripsAsync(selectedRoute.getRouteId(), newVal);
                 }
             }
+            seatsVisualPane.getChildren().clear();
         });
 
         // When schedule changes, update UI with selected trip capacity
@@ -123,6 +130,8 @@ public class ReservationController {
 
                 availableSeats.setText("Available Seats: " + Math.max(0, currentCapacity - currentSeatsTaken));
                 tripStatus.setText("Status: " + details.status);
+
+                displaySeatsVisual();
             } else {
                 resetTripDetails();
             }
@@ -135,6 +144,7 @@ public class ReservationController {
         currentSeatsTaken = 0;
         availableSeats.setText("Available Seats: --");
         tripStatus.setText("Status: --");
+        seatsVisualPane.getChildren().clear();
         showMessage("", "#334155");
     }
 
@@ -344,6 +354,29 @@ public class ReservationController {
             });
             new Thread(waitlistTask).start();
         }
+    }
+
+    private void displaySeatsVisual() {
+        seatsVisualPane.getChildren().clear();
+
+        for (int i = 0; i < currentSeatsTaken; i++) {
+            Rectangle takenSeat = createSeatVisual(true);
+            seatsVisualPane.getChildren().add(takenSeat);
+        }
+        for (int i = 0; i < currentCapacity - currentSeatsTaken; i++) {
+            Rectangle emptySeat = createSeatVisual(false);
+            seatsVisualPane.getChildren().add(emptySeat);
+        }
+    }
+
+    private Rectangle createSeatVisual(boolean taken) {
+        Rectangle seat = new Rectangle(15, 15);
+        if (taken) {
+            seat.getStyleClass().add("seats-visual-taken");
+        } else {
+            seat.getStyleClass().add("seats-visual-empty");
+        }
+        return seat;
     }
 
     private void showMessage(String message, String colorCode) {

@@ -11,9 +11,11 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.TilePane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Rectangle?>
 
-<BorderPane prefHeight="650.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ph.edu.dlsu.anilink.controller.ReservationController">
+<BorderPane prefHeight="650.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ph.edu.dlsu.anilink.controller.ReservationController">
 
     <stylesheets>
         <URL value="@../css/main.css" />
@@ -78,12 +80,25 @@
                     <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;" text="Select Schedule" />
                     <ComboBox fx:id="scheduleSelection" prefHeight="40.0" prefWidth="380.0" promptText="Choose available time" style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
                 </VBox>
-
-                <HBox alignment="CENTER" prefWidth="380.0" spacing="20.0" style="-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 15px;">
-                    <Label fx:id="availableSeats" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #0F172A;" text="Available Seats: --" />
-                    <Region HBox.hgrow="ALWAYS" />
-                    <Label fx:id="tripStatus" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #004d26;" styleClass="status-badge, status-scheduled" text="Status: --" />
-                </HBox>
+            <VBox prefHeight="50.0" style="-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px;" VBox.vgrow="SOMETIMES">
+               <children>
+      
+                      <HBox alignment="CENTER" prefWidth="380.0" spacing="20.0" style="-fx-padding: 15px;">
+                          <Label fx:id="availableSeats" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #0F172A;" text="Available Seats: --" />
+                          <Region HBox.hgrow="ALWAYS" />
+                          <Label fx:id="tripStatus" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #004d26;" styleClass="status-badge, status-scheduled" text="Status: --" />
+                      </HBox>
+                  <TilePane fx:id="seatsVisualPane" hgap="5.0" prefHeight="200.0" prefWidth="200.0" vgap="5.0">
+                     <VBox.margin>
+                        <Insets bottom="15.0" left="15.0" right="15.0" />
+                     </VBox.margin>
+                     <children>
+                        <Rectangle arcHeight="5.0" arcWidth="5.0" fill="DODGERBLUE" height="15.0" stroke="BLACK" strokeType="INSIDE" styleClass="seats-visual-taken" width="15.0" />
+                        <Rectangle arcHeight="5.0" arcWidth="5.0" fill="DODGERBLUE" height="15.0" stroke="BLACK" strokeType="INSIDE" styleClass="seats-visual-empty" width="15.0" />
+                     </children>
+                  </TilePane>
+               </children>
+            </VBox>
 
                 <Button fx:id="reserveButton" onAction="#handleReserve" prefHeight="45.0" prefWidth="380.0" style="-fx-background-color: #0d5c36; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;" styleClass="primary-button" text="Confirm Reservation" />
 
