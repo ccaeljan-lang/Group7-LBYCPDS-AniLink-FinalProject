@@ -3,6 +3,7 @@ package ph.edu.dlsu.anilink.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
@@ -25,6 +26,7 @@ import java.time.format.DateTimeFormatter;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DepartureSchedule {
+
     @JsonProperty("id")
     private Long scheduleId;
 
@@ -38,11 +40,15 @@ public class DepartureSchedule {
     @JsonProperty("capacity")
     private int capacity;
 
-    // Default constructor required for Jackson reflection
+    @JsonProperty("departure_date")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate departureDate;
+
     public DepartureSchedule() {
     }
 
-    public DepartureSchedule(Long scheduleId, Route route, LocalTime departureTime, int capacity) {
+    public DepartureSchedule(Long scheduleId, Route route,
+                             LocalTime departureTime, int capacity) {
         this.scheduleId = scheduleId;
         this.route = route;
         this.departureTime = departureTime;
@@ -57,6 +63,14 @@ public class DepartureSchedule {
         this.scheduleId = scheduleId;
     }
 
+    public Route getRoute() {
+        return route;
+    }
+
+    public void setRoute(Route route) {
+        this.route = route;
+    }
+
     public LocalTime getDepartureTime() {
         return departureTime;
     }
@@ -65,12 +79,12 @@ public class DepartureSchedule {
         this.departureTime = departureTime;
     }
 
-    public Route getRoute() {
-        return route;
+    public LocalDate getDepartureDate() {
+        return departureDate;
     }
 
-    public void setRoute(Route route) {
-        this.route = route;
+    public void setDepartureDate(LocalDate departureDate) {
+        this.departureDate = departureDate;
     }
 
     public int getCapacity() {
@@ -83,13 +97,21 @@ public class DepartureSchedule {
 
     @Override
     public String toString() {
-        String formattedTime = (departureTime != null)
+
+        String formattedTime = departureTime != null
                 ? departureTime.format(DateTimeFormatter.ofPattern("hh:mm a"))
                 : "N/A";
 
+        String dateText = departureDate != null
+                ? departureDate.toString()
+                : "No date assigned";
+
         if (route != null) {
-            return String.format("[%s] %s (Capacity: %d)", formattedTime, route.toString(), capacity);
+            return String.format("[%s | %s] %s (Capacity: %d)",
+                    dateText, formattedTime, route.toString(), capacity);
         }
-        return String.format("[%s] (Capacity: %d)", formattedTime, capacity);
+
+        return String.format("[%s | %s] (Capacity: %d)",
+                dateText, formattedTime, capacity);
     }
 }
