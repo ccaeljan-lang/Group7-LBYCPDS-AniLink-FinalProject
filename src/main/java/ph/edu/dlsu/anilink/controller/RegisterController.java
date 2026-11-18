@@ -10,6 +10,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,8 @@ public class RegisterController {
 
     @FXML private TextField nameField;
     @FXML private TextField emailField;
+    @FXML private TextField idNumberField;
+    @FXML private VBox idNumberBox;
     @FXML private ComboBox<String> categoryComboBox;
     @FXML private PasswordField passwordField;
     @FXML private Button registerButton;
@@ -45,128 +48,170 @@ public class RegisterController {
     private boolean isRegisterSuccess;
 
     @Autowired
-    public RegisterController(SupabaseService supabaseService, ApplicationContext applicationContext) {
+    public RegisterController(SupabaseService supabaseService,
+                              ApplicationContext applicationContext) {
         this.supabaseService = supabaseService;
         this.applicationContext = applicationContext;
     }
 
     @FXML
     private void initialize() {
+
         categoryComboBox.setItems(FXCollections.observableArrayList(
                 "PASSENGER", "ADMIN", "DRIVER"
         ));
+
+        idNumberBox.setVisible(false);
+        idNumberBox.setManaged(false);
+
+        categoryComboBox.valueProperty().addListener(
+                (obs, oldCategory, newCategory) -> {
+
+                    boolean passenger = "PASSENGER".equals(newCategory);
+
+                    idNumberBox.setVisible(passenger);
+                    idNumberBox.setManaged(passenger);
+
+                    if (!passenger) {
+                        idNumberField.clear();
+                    }
+                });
+
         isRegisterSuccess = false;
     }
 
     @FXML
     private void handleRegister() {
+
         String name = nameField.getText().trim();
         String email = emailField.getText().trim();
         String selection = categoryComboBox.getValue();
         String password = passwordField.getText();
+        String idNumber = idNumberField.getText().trim();
 
-        // Required fields
-        if (name.isEmpty() || email.isEmpty() || password.isEmpty() || selection == null) {
+        if (name.isEmpty() || email.isEmpty()
+                || password.isEmpty() || selection == null) {
+
             showMessage("Please fill in all required fields.", true);
             return;
         }
 
-        // DLSU email format check (@dlsu.edu.ph)
+        if ("PASSENGER".equals(selection)) {
+
+            if (idNumber.isEmpty()) {
+                showMessage("Please enter your DLSU ID Number.", true);
+                return;
+            }
+
+            if (!idNumber.matches("[0-9]{6,12}")) {
+                showMessage("DLSU ID Number must contain 6 to 12 digits only.", true);
+                return;
+            }
+        }
+
         if (!email.toLowerCase().endsWith("@dlsu.edu.ph")) {
             showMessage("Please use a valid DLSU email address (@dlsu.edu.ph).", true);
             return;
         }
 
-        // SECURITY GAP (documented): A @dlsu.edu.ph suffix check only validates
-        // the domain format. It does NOT verify email ownership or EAF. A real
-        // confirmation requires a properly configured and tested email/auth
-        // provider (e.g., an email confirmation link). Do not claim actual
-        // email verification here without such a provider.
-
-        // Basic password rules
         if (!isValidPassword(password)) {
             return;
         }
 
-        // Prevent duplicate email registration (check Supabase before insert).
         try {
             if (supabaseService.emailExists(email)) {
                 showMessage("An account with this email already exists.", true);
                 return;
             }
+
+            if ("PASSENGER".equals(selection)
+                    && supabaseService.idNumberExists(idNumber)) {
+
+                showMessage("This DLSU ID Number is already registered.", true);
+                return;
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
-            showMessage("Error checking email: " + e.getMessage(), true);
+            showMessage("Error checking email or DLSU ID: " + e.getMessage(), true);
             return;
         }
 
-        // Determine the actual database Role based on the dropdown selection.
-        // PASSENGER covers both students and faculty in one category.
         String dbRole;
+
         if ("ADMIN".equals(selection)) {
             dbRole = "ADMINISTRATOR";
         } else if ("DRIVER".equals(selection)) {
             dbRole = "DRIVER";
         } else {
-            dbRole = "PASSENGER"; // PASSENGER selection maps to PASSENGER role
+            dbRole = "PASSENGER";
         }
 
         try {
-            // SECURITY RISK (documented): passwords are sent/stored in
-            // plaintext. Hash passwords (e.g., bcrypt) before persistence in
-            // a production system.
-            supabaseService.registerAccount(name, email, password, dbRole, selection);
+            supabaseService.registerAccount(
+                    name, email, password, dbRole, selection, idNumber
+            );
+
             showMessage("Account created successfully!", false);
             isRegisterSuccess = true;
             handleGoToLogin();
+
         } catch (org.springframework.web.client.HttpStatusCodeException e) {
+
             e.printStackTrace();
-            System.err.println("Supabase Error Response: " + e.getResponseBodyAsString());
-            showMessage("Server Error (" + e.getStatusCode().value() + "): " + e.getResponseBodyAsString(), true);
+            System.err.println("Supabase Error Response: "
+                    + e.getResponseBodyAsString());
+
+            showMessage("Server Error (" + e.getStatusCode().value()
+                    + "): " + e.getResponseBodyAsString(), true);
+
         } catch (Exception e) {
+
             e.printStackTrace();
             showMessage("Error: " + e.getMessage(), true);
         }
     }
 
-    /**
-     * Basic password validation rule.
-     *
-     * @return true if the password meets the minimum rule, false otherwise
-     *         (an error message is shown to the user).
-     */
     private boolean isValidPassword(String password) {
+
         if (password.length() < 6) {
             showMessage("Password must be at least 6 characters long.", true);
             return false;
         }
+
         return true;
     }
 
     @FXML
     private void handleGoToLogin() {
+
         try {
-            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/fxml/Login.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(
+                    getClass().getResource("/fxml/Login.fxml")
+            );
+
             fxmlLoader.setControllerFactory(applicationContext::getBean);
             Parent root = fxmlLoader.load();
 
             Stage stage = (Stage) backToLoginButton.getScene().getWindow();
             stage.setScene(new Scene(root, 900, 600));
 
-            // Display successful registration in login view
             if (isRegisterSuccess) {
                 LoginController login = fxmlLoader.getController();
                 login.showMessage("Account created successfully!", false);
             }
 
             stage.show();
+
         } catch (Exception e) {
+
             e.printStackTrace();
             showMessage("Error returning to login screen.", true);
         }
     }
 
     private void showMessage(String message, boolean isError) {
+
         messageLabel.setText(message);
         messageLabel.setTextFill(isError ? Color.RED : Color.GREEN);
     }
