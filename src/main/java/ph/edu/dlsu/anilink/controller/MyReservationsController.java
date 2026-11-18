@@ -20,6 +20,7 @@ import ph.edu.dlsu.anilink.service.SupabaseService;
 import ph.edu.dlsu.anilink.util.UserSession;
 import ph.edu.dlsu.anilink.util.ViewNavigator;
 
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -319,14 +320,14 @@ public class MyReservationsController {
 
         task.setOnSucceeded(e -> {
             Reservation reservation = task.getValue();
-            String summary = bookingSummaryService.generateSummary(reservation);
+            BufferedImage summaryImage = bookingSummaryService.generateSummaryImage(reservation);
 
             javafx.stage.Stage ownerStage =
                     (javafx.stage.Stage) reservationTable.getScene().getWindow();
-            bookingSummaryService.saveToFile(summary, ownerStage);
+            bookingSummaryService.saveToFile(summaryImage, ownerStage);
 
             showAlert("Download Ready",
-                    "Booking summary for RES-" + reservation.getReservationId() +
+                    "Booking summary image for RES-" + reservation.getReservationId() +
                             " is ready to save. Please choose a location.");
         });
 

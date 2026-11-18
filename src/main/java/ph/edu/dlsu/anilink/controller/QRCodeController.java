@@ -219,13 +219,13 @@ public class QRCodeController {
 
         task.setOnSucceeded(e -> {
             Reservation fullReservation = task.getValue();
-            String summary = bookingSummaryService.generateSummary(fullReservation);
+            BufferedImage summaryImage = bookingSummaryService.generateSummaryImage(fullReservation);
 
             Stage ownerStage = (Stage) qrCode.getScene().getWindow();
-            bookingSummaryService.saveToFile(summary, ownerStage);
+            bookingSummaryService.saveToFile(summaryImage, ownerStage);
 
             showAlert("Download Ready",
-                    "Booking summary for RES-" + fullReservation.getReservationId() +
+                    "Booking summary image for RES-" + fullReservation.getReservationId() +
                             " is ready to save. Please choose a location.");
         });
 
