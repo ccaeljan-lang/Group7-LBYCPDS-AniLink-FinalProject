@@ -21,6 +21,7 @@ import ph.edu.dlsu.anilink.dsa.ScheduleBubbleSort;
 import ph.edu.dlsu.anilink.util.UserSession;
 import ph.edu.dlsu.anilink.util.ViewNavigator;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -48,6 +49,8 @@ public class ScheduleManagementController extends AbstractAdminController {
     @FXML private Label statusLabel;
     // Create Schedule button (disabled while a request is in flight).
     @FXML private Button createScheduleButton;
+    // Date picker for choosing the travel date.
+    @FXML private DatePicker departureDatePicker;
 
     // Shared schedule collection for list and dropdown.
     private final ObservableList<DepartureSchedule> schedules =
@@ -366,6 +369,11 @@ public class ScheduleManagementController extends AbstractAdminController {
 
         Route route = routeComboBox.getValue();
 
+        LocalDate departureDate = null;
+        if (departureDatePicker != null) {
+            departureDate = departureDatePicker.getValue();
+        }
+
         String departureTimeText =
                 departureTimeComboBox.getEditor()
                         .getText()
@@ -375,12 +383,24 @@ public class ScheduleManagementController extends AbstractAdminController {
                 capacityField.getText().trim();
 
         if (route == null
+                || departureDate == null
                 || departureTimeText.isEmpty()
                 || capacityText.isEmpty()) {
 
             showInlineStatus(
                     statusLabel,
                     "Please fill in all fields.",
+                    "#DC2626"
+            );
+
+            return;
+        }
+
+        if (departureDate.isBefore(LocalDate.now())) {
+
+            showInlineStatus(
+                    statusLabel,
+                    "Please select a future date.",
                     "#DC2626"
             );
 
@@ -413,6 +433,8 @@ public class ScheduleManagementController extends AbstractAdminController {
                     DateTimeFormatter.ofPattern("HH:mm:ss")
             );
 
+            String dbFormattedDate = departureDate.toString();
+
             int capacity = Integer.parseInt(capacityText);
 
             if (capacity <= 0) {
@@ -443,9 +465,11 @@ public class ScheduleManagementController extends AbstractAdminController {
                 protected String call() throws Exception {
 
                     // Check Supabase BEFORE inserting to prevent duplicates.
-                    // Same route_id + departure_time must not exist twice.
+                    // Same route_id + departure_date + departure_time
+                    // must not exist twice.
                     if (supabaseService.scheduleExists(
                             route.getRouteId(),
+                            dbFormattedDate,
                             dbFormattedTime)) {
                         return "DUPLICATE";
                     }
@@ -453,6 +477,7 @@ public class ScheduleManagementController extends AbstractAdminController {
                     // EXISTING: Save the schedule to Supabase.
                     supabaseService.createSchedule(
                             route.getRouteId(),
+                            dbFormattedDate,
                             dbFormattedTime,
                             capacity
                     );
@@ -474,17 +499,18 @@ public class ScheduleManagementController extends AbstractAdminController {
 
                     showInlineStatus(
                             statusLabel,
-                            "A schedule for this route and time already exists.",
+                            "A schedule for this route, date, and time already exists.",
                             "#DC2626"
                     );
 
                     showAlert(
                             Alert.AlertType.WARNING,
                             "Duplicate Schedule",
-                            "A departure schedule for this route at "
-                                    + dbFormattedTime
+                            "A departure schedule for this route on "
+                                    + dbFormattedDate
+                                    + " at " + dbFormattedTime
                                     + " already exists. "
-                                    + "Please choose a different time or route."
+                                    + "Please choose a different date, time, or route."
                     );
 
                     return;
@@ -547,7 +573,7 @@ public class ScheduleManagementController extends AbstractAdminController {
                     statusLabel,
                     "Use 24h time format (e.g., 08:30 or 14:00).",
                     "#DC2626"
-            );
+                    );
         }
     }
 
@@ -640,6 +666,7 @@ public class ScheduleManagementController extends AbstractAdminController {
     // Keep the route selected for consecutive schedule creation.
     private void clearFields() {
 
+        departureDatePicker.setValue(null);
         departureTimeComboBox.setValue(null);
         departureTimeComboBox.getEditor().clear();
 
