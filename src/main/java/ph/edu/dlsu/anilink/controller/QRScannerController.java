@@ -9,7 +9,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextInputDialog;
+import javafx.stage.Stage;
 import org.springframework.stereotype.Controller;
 import ph.edu.dlsu.anilink.model.User;
 import ph.edu.dlsu.anilink.service.SupabaseService;
@@ -61,13 +61,10 @@ public class QRScannerController {
     }
 
     @FXML
-    private void handleSimulateScan() {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("Simulate QR Scan");
-        dialog.setHeaderText("Enter passenger QR Payload:");
-        dialog.setContentText("QR Payload:");
-
-        Optional<String> result = dialog.showAndWait();
+    private void handleScanQR() {
+        Stage ownerStage = (Stage) scanResultLabel.getScene().getWindow();
+        CameraScannerDialog scannerDialog = new CameraScannerDialog(ownerStage);
+        Optional<String> result = scannerDialog.showAndWait();
         if (result.isPresent() && !result.get().trim().isEmpty()) {
             verifyAndBoardPassengerAsync(result.get().trim());
         }
