@@ -61,7 +61,7 @@ public class QRScannerController {
     }
 
     @FXML
-    private void handleScanQR() {
+    private void handleScanQR(ActionEvent event) {
         Stage ownerStage = (Stage) scanResultLabel.getScene().getWindow();
         CameraScannerDialog scannerDialog = new CameraScannerDialog(ownerStage);
         Optional<String> result = scannerDialog.showAndWait();
@@ -138,11 +138,6 @@ public class QRScannerController {
     @FXML
     private void handleTripDetails(ActionEvent event) {
         viewNavigator.navigateTo(event, "/fxml/TripDetails.fxml", 1000, 650);
-    }
-
-    @FXML
-    private void handleScanQR(ActionEvent event) {
-        // Already here
     }
 
     @FXML

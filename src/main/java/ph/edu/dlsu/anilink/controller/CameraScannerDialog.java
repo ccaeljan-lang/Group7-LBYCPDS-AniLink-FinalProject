@@ -235,6 +235,37 @@ public class CameraScannerDialog {
     }
 
     /**
+     * Captures a single frame from the webcam and scans it for a QR code.
+     * Used by the "Capture & Scan" button.
+     */
+    private void captureAndScan() {
+        if (webcam == null || !webcam.isOpen()) {
+            cameraStatusLabel.setText("Camera not started. Click Start Camera first.");
+            cameraStatusLabel.setStyle("-fx-text-fill: #dc2626;");
+            return;
+        }
+        BufferedImage frame = webcam.getImage();
+        if (frame == null) {
+            cameraStatusLabel.setText("Failed to capture frame. Try again.");
+            cameraStatusLabel.setStyle("-fx-text-fill: #dc2626;");
+            return;
+        }
+        String payload = scanQRCode(frame);
+        if (payload != null && !payload.isEmpty()) {
+            scannedPayload = payload;
+            stopCamera();
+            Platform.runLater(() -> {
+                cameraStatusLabel.setText("QR code detected!");
+                cameraStatusLabel.setStyle("-fx-text-fill: #0d5c36; -fx-font-weight: bold;");
+                dialogStage.close();
+            });
+        } else {
+            cameraStatusLabel.setText("No QR code detected in frame. Try again.");
+            cameraStatusLabel.setStyle("-fx-text-fill: #dc2626;");
+        }
+    }
+
+    /**
      * Scans a {@link BufferedImage} for a QR code using ZXing's MultiFormatReader.
      *
      * @param image the image to scan
