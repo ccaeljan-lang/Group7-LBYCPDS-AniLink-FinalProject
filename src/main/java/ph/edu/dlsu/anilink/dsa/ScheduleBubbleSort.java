@@ -2,6 +2,7 @@ package ph.edu.dlsu.anilink.dsa;
 
 import ph.edu.dlsu.anilink.model.DepartureSchedule;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -22,14 +23,14 @@ public final class ScheduleBubbleSort {
             List<DepartureSchedule> schedules) {
 
         return sort(schedules, Comparator.comparing(
+                DepartureSchedule::getDepartureDate,
+                Comparator.nullsLast(Comparator.<LocalDate>naturalOrder())
+        ).thenComparing(
                 DepartureSchedule::getDepartureTime,
-                Comparator.nullsLast(
-                        Comparator.<LocalTime>naturalOrder()
-                )
+                Comparator.nullsLast(Comparator.<LocalTime>naturalOrder())
         ));
     }
 
-    // Implement reusable Bubble Sort using adjacent comparisons.
     public static <T> List<T> sort(
             List<T> source,
             Comparator<? super T> comparator) {
@@ -42,12 +43,10 @@ public final class ScheduleBubbleSort {
 
             for (int i = 0; i < result.size() - 1 - pass; i++) {
 
-                // Compare two adjacent elements.
                 if (comparator.compare(
                         result.get(i),
                         result.get(i + 1)) > 0) {
 
-                    // Swap elements if they are out of order.
                     T temp = result.get(i);
 
                     result.set(i, result.get(i + 1));
@@ -57,7 +56,6 @@ public final class ScheduleBubbleSort {
                 }
             }
 
-            // Stop early if the list is already sorted.
             if (!swapped) {
                 break;
             }
