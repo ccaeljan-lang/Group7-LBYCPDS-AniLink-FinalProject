@@ -2,6 +2,8 @@
 
 <?import java.net.URL?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
@@ -79,6 +81,14 @@
                 <VBox prefWidth="380.0" spacing="6.0">
                     <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;" text="Select Schedule" />
                     <ComboBox fx:id="scheduleSelection" prefHeight="40.0" prefWidth="380.0" promptText="Choose available time" style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
+                </VBox>
+
+                <VBox prefWidth="380.0" spacing="6.0">
+                    <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #475569;" text="Search Departure Time (HH:mm)" />
+                    <HBox spacing="10.0" alignment="CENTER">
+                        <TextField fx:id="timeSearchField" prefHeight="40.0" prefWidth="220.0" promptText="e.g., 08:30" style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
+                        <Button fx:id="searchTimeButton" onAction="#handleSearchTime" prefHeight="40.0" prefWidth="120.0" text="Search" style="-fx-background-color: #0d5c36; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;" />
+                    </HBox>
                 </VBox>
             <VBox prefHeight="50.0" style="-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px;" VBox.vgrow="SOMETIMES">
                <children>
