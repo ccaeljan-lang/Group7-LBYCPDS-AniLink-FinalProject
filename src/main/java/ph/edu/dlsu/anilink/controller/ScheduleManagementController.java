@@ -1,10 +1,8 @@
 package ph.edu.dlsu.anilink.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -39,7 +37,7 @@ import java.util.Optional;
  * Existing Supabase and navigation features are retained.
  */
 @Controller
-public class ScheduleManagementController {
+public class ScheduleManagementController extends AbstractAdminController {
 
     @FXML private Label adminNameLabel;
     @FXML private ComboBox<Route> routeComboBox;
@@ -59,22 +57,11 @@ public class ScheduleManagementController {
     // Prevent rapid repeat schedule-creation submissions.
     private boolean creatingSchedule = false;
 
-    private final SupabaseService supabaseService;
-    private final UserSession userSession;
-    private final ViewNavigator viewNavigator;
-    private final ObjectMapper objectMapper;
-
     public ScheduleManagementController(
             SupabaseService supabaseService,
             UserSession userSession,
             ViewNavigator viewNavigator) {
-
-        this.supabaseService = supabaseService;
-        this.userSession = userSession;
-        this.viewNavigator = viewNavigator;
-
-        this.objectMapper = new ObjectMapper();
-        this.objectMapper.registerModule(new JavaTimeModule());
+        super(supabaseService, userSession, viewNavigator);
     }
 
     @FXML
@@ -649,88 +636,28 @@ public class ScheduleManagementController {
         capacityField.clear();
     }
 
-    private void showInlineStatus(
-            String message,
-            String colorCode) {
-
-        Platform.runLater(() -> {
-
-            statusLabel.setText(message);
-
-            statusLabel.setStyle(
-                    "-fx-text-fill: " + colorCode
-                            + "; -fx-font-weight: bold;"
-                            + " -fx-font-size: 13px;"
-            );
-        });
-    }
-
-    private void showAlert(
-            Alert.AlertType type,
-            String title,
-            String message) {
-
-        Platform.runLater(() -> {
-
-            Alert alert = new Alert(type);
-
-            alert.setTitle(title);
-            alert.setHeaderText(null);
-            alert.setContentText(message);
-
-            alert.showAndWait();
-        });
-    }
-
     @FXML
     private void handleDashboard(ActionEvent event) {
-
-        viewNavigator.navigateTo(
-                event,
-                "/fxml/AdminDashboard.fxml",
-                1000,
-                650
-        );
+        navigateToDashboard(event, 1000, 650);
     }
 
     @FXML
     private void handleRouteManagement(ActionEvent event) {
-
-        viewNavigator.navigateTo(
-                event,
-                "/fxml/RouteManagement.fxml",
-                1000,
-                650
-        );
+        navigateToRouteManagement(event, 1000, 650);
     }
 
     @FXML
     private void handleScheduleManagement(ActionEvent event) {
-
         // Already on Schedule Management.
     }
 
     @FXML
     private void handleTripManagement(ActionEvent event) {
-
-        viewNavigator.navigateTo(
-                event,
-                "/fxml/TripManagement.fxml",
-                1000,
-                650
-        );
+        navigateToTripManagement(event, 1000, 650);
     }
 
     @FXML
     private void handleLogout(ActionEvent event) {
-
-        userSession.clearSession();
-
-        viewNavigator.navigateTo(
-                event,
-                "/fxml/Login.fxml",
-                900,
-                600
-        );
+        navigateToLogout(event, 900, 600);
     }
 }

@@ -2,9 +2,7 @@ package ph.edu.dlsu.anilink.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -36,12 +34,7 @@ import java.util.List;
  * </p>
  */
 @Controller
-public class TripManagementController {
-
-    private final SupabaseService supabaseService;
-    private final UserSession userSession;
-    private final ViewNavigator viewNavigator;
-    private final ObjectMapper objectMapper;
+public class TripManagementController extends AbstractAdminController {
 
     @FXML private Label adminNameLabel;
     @FXML private ComboBox<Route> routeComboBox;
@@ -59,9 +52,7 @@ public class TripManagementController {
     );
 
     public TripManagementController(SupabaseService supabaseService, UserSession userSession, ViewNavigator viewNavigator) {
-        this.supabaseService = supabaseService;
-        this.userSession = userSession;
-        this.viewNavigator = viewNavigator;
+        super(supabaseService, userSession, viewNavigator);
 
         this.objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
@@ -385,31 +376,19 @@ public class TripManagementController {
         });
     }
 
-    private void showAlert(Alert.AlertType type, String title, String message) {
-        Platform.runLater(() -> {
-            Alert alert = new Alert(type);
-            alert.setTitle(title);
-            alert.setHeaderText(null);
-            alert.setContentText(message);
-            alert.showAndWait();
-        });
-    }
-
-    // --- Navigation Handlers ---
-
     @FXML
     private void handleDashboard(ActionEvent event) {
-        viewNavigator.navigateTo(event, "/fxml/AdminDashboard.fxml", 1100, 700);
+        navigateToDashboard(event, 1100, 700);
     }
 
     @FXML
     private void handleRouteManagement(ActionEvent event) {
-        viewNavigator.navigateTo(event, "/fxml/RouteManagement.fxml", 1100, 700);
+        navigateToRouteManagement(event, 1100, 700);
     }
 
     @FXML
     private void handleScheduleManagement(ActionEvent event) {
-        viewNavigator.navigateTo(event, "/fxml/ScheduleManagement.fxml", 1100, 700);
+        navigateToScheduleManagement(event, 1100, 700);
     }
 
     @FXML
@@ -419,12 +398,11 @@ public class TripManagementController {
 
     @FXML
     private void handleRoutes(ActionEvent event) {
-        viewNavigator.navigateTo(event, "/fxml/RouteManagement.fxml", 1100, 700);
+        navigateToRouteManagement(event, 1100, 700);
     }
 
     @FXML
     private void handleLogout(ActionEvent event) {
-        userSession.clearSession();
-        viewNavigator.navigateTo(event, "/fxml/Login.fxml", 900, 600);
+        navigateToLogout(event, 900, 600);
     }
 }
