@@ -12,10 +12,12 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.TilePane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import org.springframework.stereotype.Controller;
+import ph.edu.dlsu.anilink.dsa.ScheduleBinarySearch;
 import ph.edu.dlsu.anilink.model.Reservation;
 import ph.edu.dlsu.anilink.model.Route;
 import ph.edu.dlsu.anilink.model.Trip;
@@ -29,7 +31,9 @@ import ph.edu.dlsu.anilink.util.UserSession;
 import ph.edu.dlsu.anilink.util.ViewNavigator;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -64,6 +68,8 @@ public class ReservationController {
     @FXML private Label tripStatus;
     @FXML private Button reserveButton;
     @FXML private Label reservationMessage;
+    @FXML private TextField timeSearchField;
+    @FXML private Button searchTimeButton;
     @FXML private TilePane seatsVisualPane;
 
     private final Map<String, Route> routeMap = new HashMap<>();
@@ -280,6 +286,147 @@ public class ReservationController {
                 }
                 showMessage("Failed to process reservation in Supabase.", "#DC2626");
             }
+        });
+
+        new Thread(task).start();
+    }
+
+    /**
+     * Searches for a departure schedule by time using Binary Search.
+     * Filters trips by the selected route and travel date before searching.
+     */
+    @FXML
+    private void handleSearchTime() {
+
+        String timeText = timeSearchField.getText().trim();
+
+        if (timeText.isEmpty()) {
+            showMessage("Please enter a departure time (e.g., 08:30).", "#DC2626");
+            return;
+        }
+
+        if (!timeText.matches("^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$")) {
+            showMessage("Please use 24-hour format (e.g., 08:30 or 14:00).", "#DC2626");
+            return;
+        }
+
+        Route selectedRoute = routeMap.get(routeSelection.getValue());
+        LocalDate date = dateSelection.getValue();
+
+        if (selectedRoute == null) {
+            showMessage("Please select a route first.", "#DC2626");
+            return;
+        }
+
+        if (date == null) {
+            showMessage("Please select a travel date first.", "#DC2626");
+            return;
+        }
+
+        showMessage("Searching schedules...", "#0284C7");
+
+        String dateStr = date.toString();
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+
+                String json = supabaseService
+                        .getTripsByRouteAndDate(selectedRoute.getRouteId(), dateStr);
+
+                JsonNode tripsArray = objectMapper.readTree(json);
+
+                Platform.runLater(() -> {
+                    scheduleSelection.getItems().clear();
+                    tripMap.clear();
+
+                    if (tripsArray != null && tripsArray.isArray() && !tripsArray.isEmpty()) {
+
+                        // Collect and sort departure times for Binary Search.
+                        List<String> sortedTimes = new java.util.ArrayList<>();
+                        Map<String, String> timeToDisplay = new java.util.HashMap<>();
+
+                        for (JsonNode trip : tripsArray) {
+
+                            JsonNode scheduleNode = trip.path("schedule");
+                            String time = scheduleNode.path("departure_time").asText("");
+
+                            if (time.isEmpty()) {
+                                continue;
+                            }
+
+                            // Normalize to HH:mm for comparison.
+                            String normalizedTime;
+                            if (time.length() == 5) {
+                                normalizedTime = time;
+                            } else if (time.length() == 8) {
+                                normalizedTime = time.substring(0, 5);
+                            } else {
+                                continue;
+                            }
+
+                            long id = trip.path("id").asLong();
+                            int capacity = trip.path("capacity").asInt(0);
+                            int seatsTaken = trip.path("seats_taken").asInt(0);
+                            String status = trip.path("status").asText("SCHEDULED");
+
+                            String display = "Departure: " + normalizedTime;
+                            tripMap.put(display, new TripDetails(id, capacity, seatsTaken, status));
+
+                            if (!sortedTimes.contains(normalizedTime)) {
+                                sortedTimes.add(normalizedTime);
+                                timeToDisplay.put(normalizedTime, display);
+                            }
+                        }
+
+                        // Sort times before Binary Search (required).
+                        Collections.sort(sortedTimes);
+
+                        // Perform Binary Search.
+                        String searchTime;
+                        if (timeText.length() == 5) {
+                            searchTime = timeText;
+                        } else {
+                            searchTime = timeText;
+                        }
+
+                        int foundIndex = ScheduleBinarySearch.search(sortedTimes, searchTime);
+
+                        if (foundIndex >= 0) {
+
+                            String foundTime = sortedTimes.get(foundIndex);
+                            String foundDisplay = timeToDisplay.get(foundTime);
+
+                            scheduleSelection.getItems().add(foundDisplay);
+                            scheduleSelection.setValue(foundDisplay);
+
+                            TripDetails details = tripMap.get(foundDisplay);
+                            selectedTripId = details.tripId;
+                            currentCapacity = details.capacity;
+                            currentSeatsTaken = details.seatsTaken;
+
+                            availableSeats.setText("Available Seats: "
+                                    + Math.max(0, currentCapacity - currentSeatsTaken));
+                            tripStatus.setText("Status: " + details.status);
+                            displaySeatsVisual();
+
+                            showMessage("Found schedule at " + foundTime, "#16A34A");
+                        } else {
+
+                            showMessage("No schedule found at " + timeText
+                                    + " for the selected route and date.", "#DC2626");
+                        }
+
+                    } else {
+                        showMessage("No schedules found for selected route and date.", "#DC2626");
+                    }
+                });
+                return null;
+            }
+        };
+
+        task.setOnFailed(e -> {
+            Platform.runLater(() -> showMessage("Failed to search schedules.", "#DC2626"));
         });
 
         new Thread(task).start();
