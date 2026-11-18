@@ -661,15 +661,11 @@ public class SupabaseService {
     }
 
     public String getTripsByRouteAndDate(Long routeId, String dateStr) {
-        String startOfDay = dateStr + "T00:00:00";
-        String endOfDay = dateStr + "T23:59:59";
-
         return restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/trips")
                         .queryParam("route_id", "eq." + routeId)
-                        .queryParam("schedule.departure_time", "gte." + startOfDay)
-                        .queryParam("schedule.departure_time", "lt." + endOfDay)
+                        .queryParam("schedule.departure_date", "eq." + dateStr)
                         .queryParam("select", "*,schedule:departure_schedules(*)")
                         .build())
                 .retrieve()
