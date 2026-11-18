@@ -6,7 +6,6 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
-<?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
@@ -14,8 +13,8 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane prefHeight="700.0"
-            prefWidth="1100.0"
+<BorderPane prefHeight="750.0"
+            prefWidth="1150.0"
             xmlns="http://javafx.com/javafx/21"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="ph.edu.dlsu.anilink.controller.TripManagementController">
@@ -31,10 +30,10 @@
               style="-fx-background-color: #0d5c36; -fx-padding: 10 25;"
               styleClass="top-nav">
             <ImageView fitHeight="28.0" preserveRatio="true">
-                <image>
-                    <Image url="@../images/nologotitle.png" />
-                </image>
-            </ImageView>
+                
+                        <Image url="@../images/nologotitle.png" />
+                    </image>
+                </ImageView>
             <Region HBox.hgrow="ALWAYS" />
             <Label fx:id="adminNameLabel" style="-fx-text-fill: #F8FAFC; -fx-font-size: 14px; -fx-font-weight: bold;" text="Welcome, Admin" />
             <Label style="-fx-text-fill: #94A3B8; -fx-font-size: 18px;" text="⚙️" />
@@ -66,7 +65,7 @@
     </left>
 
     <center>
-        <VBox spacing="25.0" style="-fx-background-color: #F8FAFC;">
+        <VBox spacing="20.0" style="-fx-background-color: #F8FAFC;">
             <padding>
                 <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
             </padding>
@@ -76,66 +75,73 @@
                 <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B;" text="Create and manage active trips across all routes" />
             </VBox>
 
+            <!-- Create New Trip Form -->
             <VBox spacing="20.0" VBox.vgrow="ALWAYS">
 
                 <VBox spacing="15.0"
                       style="-fx-background-color: #FFFFFF; -fx-background-radius: 10px; -fx-border-color: #E2E8F0; -fx-border-radius: 10px; -fx-padding: 25;">
                     <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1E293B;" text="Create New Trip" />
 
+                    <!-- Row 1: Route and Departure Schedule -->
                     <HBox spacing="15.0" alignment="CENTER_LEFT">
                         <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                             <Label text="Route" style="-fx-text-fill: #475569; -fx-font-size: 12px;"/>
-                            <ComboBox fx:id="routeComboBox" onAction="#handleRouteSelection" promptText="Select Route" prefWidth="200" style="-fx-background-color: #F1F5F9; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+                            <ComboBox fx:id="routeComboBox" onAction="#handleRouteSelection" promptText="Select Route" prefWidth="220" style="-fx-background-color: #F1F5F9; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
                         </VBox>
 
                         <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                             <Label text="Departure Schedule" style="-fx-text-fill: #475569; -fx-font-size: 12px;"/>
-                            <ComboBox fx:id="scheduleComboBox" promptText="Select Schedule" prefWidth="200" style="-fx-background-color: #F1F5F9; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+                            <ComboBox fx:id="scheduleComboBox" promptText="Select Schedule (shows capacity)" prefWidth="280" style="-fx-background-color: #F1F5F9; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
                         </VBox>
+                    </HBox>
 
+                    <!-- Row 2: Assign Driver and Initial Status -->
+                    <HBox spacing="15.0" alignment="CENTER_LEFT">
                         <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                             <Label text="Assign Driver" style="-fx-text-fill: #475569; -fx-font-size: 12px;"/>
-                            <ComboBox fx:id="driverComboBox" promptText="Select Driver" prefWidth="200" style="-fx-background-color: #F1F5F9; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
-                        </VBox>
-
-                        <VBox spacing="5.0">
-                            <Label text="Capacity" style="-fx-text-fill: #475569; -fx-font-size: 12px;"/>
-                            <TextField fx:id="capacityField" promptText="e.g. 40" prefWidth="80" style="-fx-background-color: #F1F5F9; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+                            <ComboBox fx:id="driverComboBox" promptText="Select Driver" prefWidth="220" style="-fx-background-color: #F1F5F9; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
                         </VBox>
 
                         <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                             <Label text="Initial Status" style="-fx-text-fill: #475569; -fx-font-size: 12px;"/>
-                            <ComboBox fx:id="statusComboBox" promptText="Status" prefWidth="130" style="-fx-background-color: #F1F5F9; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+                            <ComboBox fx:id="statusComboBox" promptText="Status" prefWidth="180" style="-fx-background-color: #F1F5F9; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
                         </VBox>
+                    </HBox>
 
-                        <VBox alignment="BOTTOM_CENTER" prefHeight="45.0">
-                            <Button onAction="#handleAddTrip" text="Create Trip" prefHeight="30" prefWidth="110" style="-fx-background-color: #0F172A; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand;"/>
-                        </VBox>
+                    <!-- Create Trip Button -->
+                    <HBox alignment="CENTER_LEFT">
+                        <Button onAction="#handleAddTrip" text="Create Trip" prefHeight="40" prefWidth="140" style="-fx-background-color: #0F172A; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand;"/>
                     </HBox>
                 </VBox>
 
+                <!-- Existing Trips Section -->
                 <VBox spacing="15.0" VBox.vgrow="ALWAYS"
                       style="-fx-background-color: #FFFFFF; -fx-background-radius: 10px; -fx-border-color: #E2E8F0; -fx-border-radius: 10px; -fx-padding: 25;">
 
-                    <HBox alignment="CENTER_LEFT" spacing="12.0">
-                        <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1E293B;" text="Existing Trips" />
-                        <Region HBox.hgrow="ALWAYS" />
+                    <VBox spacing="10.0">
+                        <HBox alignment="CENTER_LEFT" spacing="12.0">
+                            <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #1E293B;" text="Existing Trips" />
+                            <Region HBox.hgrow="ALWAYS" />
 
+                            <Button onAction="#handleSyncSeats" text="Sync Seats Taken" prefHeight="32" style="-fx-background-color: #FFFFFF; -fx-text-fill: #0d5c36; -fx-border-color: #0d5c36; -fx-border-radius: 6; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;"/>
+                        </HBox>
+
+                        <ListView fx:id="tripListView" VBox.vgrow="ALWAYS" style="-fx-border-color: #E2E8F0; -fx-border-radius: 6px; -fx-background-radius: 6px;"/>
+                    </VBox>
+
+                    <!-- Action Buttons Row -->
+                    <HBox spacing="12.0" alignment="CENTER_LEFT">
                         <Label text="Re-assign Driver:" style="-fx-text-fill: #64748B; -fx-font-size: 13px;"/>
-                        <ComboBox fx:id="updateDriverComboBox" promptText="Select Driver" prefWidth="160" style="-fx-background-color: #F8FAFC; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
-                        <Button onAction="#handleAssignDriver" text="Assign Driver" prefHeight="30" style="-fx-background-color: #0d5c36; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand;"/>
+                        <ComboBox fx:id="updateDriverComboBox" promptText="Select Driver" prefWidth="170" style="-fx-background-color: #F8FAFC; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+                        <Button onAction="#handleAssignDriver" text="Assign Driver" prefHeight="32" style="-fx-background-color: #0d5c36; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand;"/>
 
                         <Label text="Status:" style="-fx-text-fill: #64748B; -fx-font-size: 13px;"/>
-                        <ComboBox fx:id="updateStatusComboBox" promptText="Select Status" prefWidth="140" style="-fx-background-color: #F8FAFC; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
-                        <Button onAction="#handleUpdateStatus" text="Update Status" prefHeight="30" style="-fx-background-color: #0d5c36; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand;"/>
+                        <ComboBox fx:id="updateStatusComboBox" promptText="Select Status" prefWidth="150" style="-fx-background-color: #F8FAFC; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+                        <Button onAction="#handleUpdateStatus" text="Update Status" prefHeight="32" style="-fx-background-color: #0d5c36; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand;"/>
 
-                        <Button onAction="#handleDeleteTrip" text="Delete Selected" prefHeight="30" style="-fx-background-color: #FFFFFF; -fx-text-fill: #DC2626; -fx-border-color: #DC2626; -fx-border-radius: 6; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;"/>
-                        <Button onAction="#handleSyncSeats" text="Sync Seats Taken" prefHeight="30" style="-fx-background-color: #FFFFFF; -fx-text-fill: #0d5c36; -fx-border-color: #0d5c36; -fx-border-radius: 6; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;"/>
+                        <Button onAction="#handleDeleteTrip" text="Delete Selected" prefHeight="32" style="-fx-background-color: #FFFFFF; -fx-text-fill: #DC2626; -fx-border-color: #DC2626; -fx-border-radius: 6; -fx-background-radius: 6; -fx-font-weight: bold; -fx-cursor: hand;"/>
                     </HBox>
-
-                    <ListView fx:id="tripListView" VBox.vgrow="ALWAYS" style="-fx-border-color: #E2E8F0; -fx-border-radius: 6px; -fx-background-radius: 6px;"/>
                 </VBox>
-
             </VBox>
         </VBox>
     </center>

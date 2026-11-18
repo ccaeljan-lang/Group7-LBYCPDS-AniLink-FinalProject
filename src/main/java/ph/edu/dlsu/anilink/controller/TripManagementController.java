@@ -2,6 +2,7 @@ package ph.edu.dlsu.anilink.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -40,18 +41,23 @@ public class TripManagementController extends AbstractAdminController {
     @FXML private ComboBox<Route> routeComboBox;
     @FXML private ComboBox<DepartureSchedule> scheduleComboBox;
     @FXML private ComboBox<User> driverComboBox;
-    @FXML private TextField capacityField;
     @FXML private ComboBox<String> statusComboBox;
     @FXML private ComboBox<User> updateDriverComboBox;
     @FXML private ComboBox<String> updateStatusComboBox;
     @FXML private ListView<Trip> tripListView;
+
+    private final ObjectMapper objectMapper;
 
     private final ObservableList<Trip> trips = FXCollections.observableArrayList();
     private final ObservableList<String> statuses = FXCollections.observableArrayList(
             "SCHEDULED", "ARRIVING", "BOARDING", "IN_TRANSIT", "COMPLETED", "CANCELLED"
     );
 
-    public TripManagementController(SupabaseService supabaseService, UserSession userSession, ViewNavigator viewNavigator) {
+    public TripManagementController(
+            SupabaseService supabaseService,
+            UserSession userSession,
+            ViewNavigator viewNavigator
+    ) {
         super(supabaseService, userSession, viewNavigator);
 
         this.objectMapper = new ObjectMapper()
@@ -62,6 +68,7 @@ public class TripManagementController extends AbstractAdminController {
     @FXML
     public void initialize() {
         User user = userSession.getCurrentUser();
+
         if (user != null && adminNameLabel != null) {
             adminNameLabel.setText("Welcome, " + user.getName());
         }
@@ -70,6 +77,7 @@ public class TripManagementController extends AbstractAdminController {
 
         statusComboBox.setItems(statuses);
         statusComboBox.setValue("SCHEDULED");
+
         updateStatusComboBox.setItems(statuses);
 
         setupDriverComboBoxConverters();
@@ -84,7 +92,7 @@ public class TripManagementController extends AbstractAdminController {
         StringConverter<User> driverConverter = new StringConverter<>() {
             @Override
             public String toString(User user) {
-                return (user != null) ? user.getName() : "";
+                return user != null ? user.getName() : "";
             }
 
             @Override
@@ -100,6 +108,7 @@ public class TripManagementController extends AbstractAdminController {
     @FXML
     private void handleRouteSelection() {
         Route selectedRoute = routeComboBox.getValue();
+
         if (selectedRoute == null) {
             loadSchedulesAsync();
             return;
@@ -108,13 +117,24 @@ public class TripManagementController extends AbstractAdminController {
         Task<List<DepartureSchedule>> task = new Task<>() {
             @Override
             protected List<DepartureSchedule> call() throws Exception {
-                String response = supabaseService.getSchedulesByRoute(selectedRoute.getRouteId());
-                return objectMapper.readValue(response, new TypeReference<>() {});
+                String response = supabaseService.getSchedulesByRoute(
+                        selectedRoute.getRouteId()
+                );
+
+                return objectMapper.readValue(
+                        response,
+                        new TypeReference<>() {}
+                );
             }
         };
 
-        task.setOnSucceeded(e -> scheduleComboBox.getItems().setAll(task.getValue()));
-        task.setOnFailed(e -> e.getSource().getException().printStackTrace());
+        task.setOnSucceeded(e ->
+                scheduleComboBox.getItems().setAll(task.getValue())
+        );
+
+        task.setOnFailed(e ->
+                task.getException().printStackTrace()
+        );
 
         new Thread(task).start();
     }
@@ -124,47 +144,68 @@ public class TripManagementController extends AbstractAdminController {
         Route route = routeComboBox.getValue();
         DepartureSchedule schedule = scheduleComboBox.getValue();
         User driver = driverComboBox.getValue();
-        String capacityText = capacityField.getText().trim();
         String status = statusComboBox.getValue();
 
-        if (route == null || schedule == null || capacityText.isEmpty()) {
-            showAlert(Alert.AlertType.WARNING, "Missing Information", "Please select a Route, Departure Schedule, and Capacity.");
+        if (route == null || schedule == null) {
+            showAlert(
+                    Alert.AlertType.WARNING,
+                    "Missing Information",
+                    "Please select a Route and Departure Schedule."
+            );
             return;
         }
 
-        try {
-            int capacity = Integer.parseInt(capacityText);
-            if (capacity <= 0) {
-                showAlert(Alert.AlertType.WARNING, "Invalid Capacity", "Capacity must be greater than zero.");
-                return;
-            }
+        // Get capacity from the selected schedule (set in Schedule Management)
+        int capacity = schedule.getCapacity();
 
-            Long driverId = (driver != null) ? driver.getUserId() : null;
-
-            Task<Void> task = new Task<>() {
-                @Override
-                protected Void call() throws Exception {
-                    supabaseService.createTrip(route.getRouteId(), schedule.getScheduleId(), driverId, capacity, status);
-                    return null;
-                }
-            };
-
-            task.setOnSucceeded(e -> {
-                loadTripsAsync();
-                clearFields();
-                showAlert(Alert.AlertType.INFORMATION, "Trip Added", "Trip was successfully created.");
-            });
-
-            task.setOnFailed(e -> {
-                e.getSource().getException().printStackTrace();
-                showAlert(Alert.AlertType.ERROR, "Database Error", "Unable to create trip in Supabase.");
-            });
-
-            new Thread(task).start();
-
-        } catch (NumberFormatException e) {
-            showAlert(Alert.AlertType.ERROR, "Invalid Input", "Capacity must be a valid number.");
+        if (capacity <= 0) {
+            showAlert(
+                    Alert.AlertType.WARNING,
+                    "Invalid Capacity",
+                    "The selected schedule has an invalid capacity. Please update the schedule first."
+            );
+            return;
         }
+
+        Long driverId = driver != null ? driver.getUserId() : null;
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                supabaseService.createTrip(
+                        route.getRouteId(),
+                        schedule.getScheduleId(),
+                        driverId,
+                        capacity,
+                        status
+                );
+
+                return null;
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            loadTripsAsync();
+            clearFields();
+
+            showAlert(
+                    Alert.AlertType.INFORMATION,
+                    "Trip Added",
+                    "Trip was successfully created."
+            );
+        });
+
+        task.setOnFailed(e -> {
+            task.getException().printStackTrace();
+
+            showAlert(
+                    Alert.AlertType.ERROR,
+                    "Database Error",
+                    "Unable to create trip in Supabase."
+            );
+        });
+
+        new Thread(task).start();
     }
 
     @FXML
@@ -173,14 +214,22 @@ public class TripManagementController extends AbstractAdminController {
         User selectedDriver = updateDriverComboBox.getValue();
 
         if (selectedTrip == null || selectedDriver == null) {
-            showAlert(Alert.AlertType.WARNING, "Missing Selection", "Please select a trip from the list and a driver from the dropdown.");
+            showAlert(
+                    Alert.AlertType.WARNING,
+                    "Missing Selection",
+                    "Please select a trip from the list and a driver from the dropdown."
+            );
             return;
         }
 
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                supabaseService.assignDriverToTrip(selectedTrip.getTripId(), selectedDriver.getUserId());
+                supabaseService.assignDriverToTrip(
+                        selectedTrip.getTripId(),
+                        selectedDriver.getUserId()
+                );
+
                 return null;
             }
         };
@@ -188,12 +237,22 @@ public class TripManagementController extends AbstractAdminController {
         task.setOnSucceeded(e -> {
             loadTripsAsync();
             updateDriverComboBox.getSelectionModel().clearSelection();
-            showAlert(Alert.AlertType.INFORMATION, "Driver Assigned", "Successfully assigned " + selectedDriver.getName() + " to the trip.");
+
+            showAlert(
+                    Alert.AlertType.INFORMATION,
+                    "Driver Assigned",
+                    "Successfully assigned " + selectedDriver.getName() + " to the trip."
+            );
         });
 
         task.setOnFailed(e -> {
-            e.getSource().getException().printStackTrace();
-            showAlert(Alert.AlertType.ERROR, "Database Error", "Failed to assign driver in Supabase.");
+            task.getException().printStackTrace();
+
+            showAlert(
+                    Alert.AlertType.ERROR,
+                    "Database Error",
+                    "Failed to assign driver in Supabase."
+            );
         });
 
         new Thread(task).start();
@@ -205,14 +264,22 @@ public class TripManagementController extends AbstractAdminController {
         String selectedStatus = updateStatusComboBox.getValue();
 
         if (selectedTrip == null || selectedStatus == null) {
-            showAlert(Alert.AlertType.WARNING, "Missing Selection", "Please select a trip from the list and a status from the dropdown.");
+            showAlert(
+                    Alert.AlertType.WARNING,
+                    "Missing Selection",
+                    "Please select a trip from the list and a status from the dropdown."
+            );
             return;
         }
 
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                supabaseService.updateTripStatus(selectedTrip.getTripId(), selectedStatus);
+                supabaseService.updateTripStatus(
+                        selectedTrip.getTripId(),
+                        selectedStatus
+                );
+
                 return null;
             }
         };
@@ -220,12 +287,22 @@ public class TripManagementController extends AbstractAdminController {
         task.setOnSucceeded(e -> {
             loadTripsAsync();
             updateStatusComboBox.getSelectionModel().clearSelection();
-            showAlert(Alert.AlertType.INFORMATION, "Trip Updated", "Trip status successfully updated to " + selectedStatus);
+
+            showAlert(
+                    Alert.AlertType.INFORMATION,
+                    "Trip Updated",
+                    "Trip status successfully updated to " + selectedStatus
+            );
         });
 
         task.setOnFailed(e -> {
-            e.getSource().getException().printStackTrace();
-            showAlert(Alert.AlertType.ERROR, "Database Error", "Failed to update trip status in Supabase.");
+            task.getException().printStackTrace();
+
+            showAlert(
+                    Alert.AlertType.ERROR,
+                    "Database Error",
+                    "Failed to update trip status in Supabase."
+            );
         });
 
         new Thread(task).start();
@@ -236,14 +313,24 @@ public class TripManagementController extends AbstractAdminController {
         Trip selectedTrip = tripListView.getSelectionModel().getSelectedItem();
 
         if (selectedTrip == null) {
-            showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a trip to delete.");
+            showAlert(
+                    Alert.AlertType.WARNING,
+                    "No Selection",
+                    "Please select a trip to delete."
+            );
             return;
         }
 
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to delete this trip?");
+        Alert confirm = new Alert(
+                Alert.AlertType.CONFIRMATION,
+                "Are you sure you want to delete this trip?"
+        );
+
         confirm.setHeaderText("Confirm Deletion");
+
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
+
                 Task<Void> task = new Task<>() {
                     @Override
                     protected Void call() throws Exception {
@@ -254,12 +341,22 @@ public class TripManagementController extends AbstractAdminController {
 
                 task.setOnSucceeded(e -> {
                     loadTripsAsync();
-                    showAlert(Alert.AlertType.INFORMATION, "Trip Deleted", "Trip was successfully deleted.");
+
+                    showAlert(
+                            Alert.AlertType.INFORMATION,
+                            "Trip Deleted",
+                            "Trip was successfully deleted."
+                    );
                 });
 
                 task.setOnFailed(e -> {
-                    e.getSource().getException().printStackTrace();
-                    showAlert(Alert.AlertType.ERROR, "Database Error", "Unable to delete trip. Active reservations may be linked to it.");
+                    task.getException().printStackTrace();
+
+                    showAlert(
+                            Alert.AlertType.ERROR,
+                            "Database Error",
+                            "Unable to delete trip. Active reservations may be linked to it."
+                    );
                 });
 
                 new Thread(task).start();
@@ -277,7 +374,11 @@ public class TripManagementController extends AbstractAdminController {
         Trip selectedTrip = tripListView.getSelectionModel().getSelectedItem();
 
         if (selectedTrip == null) {
-            showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a trip from the list to sync seats.");
+            showAlert(
+                    Alert.AlertType.WARNING,
+                    "No Selection",
+                    "Please select a trip from the list to sync seats."
+            );
             return;
         }
 
@@ -290,8 +391,13 @@ public class TripManagementController extends AbstractAdminController {
         };
 
         task.setOnSucceeded(e -> {
-            showAlert(Alert.AlertType.INFORMATION, "Seats Synced", "Seats taken for Trip #" + selectedTrip.getTripId() +
-                    " has been recalculated from active reservations.");
+            showAlert(
+                    Alert.AlertType.INFORMATION,
+                    "Seats Synced",
+                    "Seats taken for Trip #" + selectedTrip.getTripId() +
+                            " has been recalculated from active reservations."
+            );
+
             loadTripsAsync();
         });
 
@@ -299,7 +405,12 @@ public class TripManagementController extends AbstractAdminController {
             if (task.getException() != null) {
                 task.getException().printStackTrace();
             }
-            showAlert(Alert.AlertType.ERROR, "Sync Failed", "Failed to sync seats taken.");
+
+            showAlert(
+                    Alert.AlertType.ERROR,
+                    "Sync Failed",
+                    "Failed to sync seats taken."
+            );
         });
 
         new Thread(task).start();
@@ -312,11 +423,22 @@ public class TripManagementController extends AbstractAdminController {
             @Override
             protected List<Route> call() throws Exception {
                 String response = supabaseService.getRoutes();
-                return objectMapper.readValue(response, new TypeReference<>() {});
+
+                return objectMapper.readValue(
+                        response,
+                        new TypeReference<>() {}
+                );
             }
         };
-        task.setOnSucceeded(e -> routeComboBox.getItems().setAll(task.getValue()));
-        task.setOnFailed(e -> e.getSource().getException().printStackTrace());
+
+        task.setOnSucceeded(e ->
+                routeComboBox.getItems().setAll(task.getValue())
+        );
+
+        task.setOnFailed(e ->
+                task.getException().printStackTrace()
+        );
+
         new Thread(task).start();
     }
 
@@ -325,11 +447,22 @@ public class TripManagementController extends AbstractAdminController {
             @Override
             protected List<DepartureSchedule> call() throws Exception {
                 String response = supabaseService.getSchedules();
-                return objectMapper.readValue(response, new TypeReference<>() {});
+
+                return objectMapper.readValue(
+                        response,
+                        new TypeReference<>() {}
+                );
             }
         };
-        task.setOnSucceeded(e -> scheduleComboBox.getItems().setAll(task.getValue()));
-        task.setOnFailed(e -> e.getSource().getException().printStackTrace());
+
+        task.setOnSucceeded(e ->
+                scheduleComboBox.getItems().setAll(task.getValue())
+        );
+
+        task.setOnFailed(e ->
+                task.getException().printStackTrace()
+        );
+
         new Thread(task).start();
     }
 
@@ -338,15 +471,25 @@ public class TripManagementController extends AbstractAdminController {
             @Override
             protected List<User> call() throws Exception {
                 String response = supabaseService.getDrivers();
-                return objectMapper.readValue(response, new TypeReference<>() {});
+
+                return objectMapper.readValue(
+                        response,
+                        new TypeReference<>() {}
+                );
             }
         };
+
         task.setOnSucceeded(e -> {
             List<User> driversList = task.getValue();
+
             driverComboBox.getItems().setAll(driversList);
             updateDriverComboBox.getItems().setAll(driversList);
         });
-        task.setOnFailed(e -> e.getSource().getException().printStackTrace());
+
+        task.setOnFailed(e ->
+                task.getException().printStackTrace()
+        );
+
         new Thread(task).start();
     }
 
@@ -355,25 +498,36 @@ public class TripManagementController extends AbstractAdminController {
             @Override
             protected List<Trip> call() throws Exception {
                 String response = supabaseService.getTripsWithDetails();
-                return objectMapper.readValue(response, new TypeReference<>() {});
+
+                return objectMapper.readValue(
+                        response,
+                        new TypeReference<>() {}
+                );
             }
         };
-        task.setOnSucceeded(e -> trips.setAll(task.getValue()));
+
+        task.setOnSucceeded(e ->
+                trips.setAll(task.getValue())
+        );
+
         task.setOnFailed(e -> {
-            e.getSource().getException().printStackTrace();
-            showAlert(Alert.AlertType.ERROR, "Database Error", "Unable to load trips from Supabase.");
+            task.getException().printStackTrace();
+
+            showAlert(
+                    Alert.AlertType.ERROR,
+                    "Database Error",
+                    "Unable to load trips from Supabase."
+            );
         });
+
         new Thread(task).start();
     }
 
     private void clearFields() {
-        Platform.runLater(() -> {
-            capacityField.clear();
-            routeComboBox.getSelectionModel().clearSelection();
-            scheduleComboBox.getSelectionModel().clearSelection();
-            driverComboBox.getSelectionModel().clearSelection();
-            statusComboBox.setValue("SCHEDULED");
-        });
+        routeComboBox.getSelectionModel().clearSelection();
+        scheduleComboBox.getSelectionModel().clearSelection();
+        driverComboBox.getSelectionModel().clearSelection();
+        statusComboBox.setValue("SCHEDULED");
     }
 
     @FXML
