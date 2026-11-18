@@ -139,9 +139,9 @@ public class CameraScannerDialog {
         int w = 400, h = 300;
         BufferedImage bi = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
         java.awt.Graphics2D g = bi.createGraphics();
-        g.setColor(Color.web("#F1F5F9").getColor());
+        g.setColor(java.awt.Color.decode("#F1F5F9"));
         g.fillRect(0, 0, w, h);
-        g.setColor(Color.web("#94A3B8").getColor());
+        g.setColor(java.awt.Color.decode("#94A3B8"));
         g.drawString("Camera Preview", w / 2 - 40, h / 2);
         g.drawString("(Click Start Camera)", w / 2 - 55, h / 2 + 20);
         g.dispose();
