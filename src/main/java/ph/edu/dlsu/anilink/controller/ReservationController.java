@@ -413,8 +413,11 @@ public class ReservationController {
                             showMessage("Found schedule at " + foundTime, "#16A34A");
                         } else {
 
-                            showMessage("No schedule found at " + timeText
-                                    + " for the selected route and date.", "#DC2626");
+                            // No matching departure time — clear previous selection.
+                            scheduleSelection.setValue(null);
+                            resetTripDetails();
+
+                            showMessage("No departure schedule found at " + timeText + ".", "#DC2626");
                         }
 
                     } else {
@@ -426,7 +429,15 @@ public class ReservationController {
         };
 
         task.setOnFailed(e -> {
-            Platform.runLater(() -> showMessage("Failed to search schedules.", "#DC2626"));
+            Throwable ex = e.getSource().getException();
+            if (ex != null) {
+                ex.printStackTrace();
+            }
+            Platform.runLater(() -> {
+                scheduleSelection.setValue(null);
+                resetTripDetails();
+                showMessage("Failed to search schedules.", "#DC2626");
+            });
         });
 
         new Thread(task).start();
