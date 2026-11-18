@@ -12,7 +12,6 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import org.springframework.stereotype.Controller;
 import ph.edu.dlsu.anilink.model.Reservation;
-import ph.edu.dlsu.anilink.model.TripFullException;
 import ph.edu.dlsu.anilink.model.User;
 import ph.edu.dlsu.anilink.service.BookingSummaryService;
 import ph.edu.dlsu.anilink.service.ReservationService;
@@ -53,7 +52,6 @@ public class MyReservationsController {
     @FXML private TableColumn<ReservationItem, String> dateColumn;
     @FXML private TableColumn<ReservationItem, String> departureColumn;
     @FXML private TableColumn<ReservationItem, String> statusColumn;
-    @FXML private TableColumn<ReservationItem, String> actionColumn;
     @FXML private TableColumn<ReservationItem, String> downloadColumn;
     @FXML private TableColumn<ReservationItem, String> cancelColumn;
 
@@ -88,33 +86,6 @@ public class MyReservationsController {
         dateColumn.setCellValueFactory(new PropertyValueFactory<>("date"));
         departureColumn.setCellValueFactory(new PropertyValueFactory<>("departureTime"));
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
-
-        // Action column with a "Repeat" button for each reservation row
-        // Hidden for cancelled or completed reservations
-        actionColumn.setCellFactory(param -> new TableCell<>() {
-            private final Button repeatButton = new Button("Repeat");
-
-            {
-                repeatButton.setOnAction(event -> {
-                    ReservationItem item = getTableView().getItems().get(getIndex());
-                    handleRepeatReservation(item);
-                });
-            }
-
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
-                } else {
-                    ReservationItem ri = getTableView().getItems().get(getIndex());
-                    String status = ri.getStatus() != null ? ri.getStatus() : "";
-                    boolean isActive = !"CANCELLED".equalsIgnoreCase(status)
-                            && !"COMPLETED".equalsIgnoreCase(status);
-                    setGraphic(isActive ? repeatButton : null);
-                }
-            }
-        });
 
         // Download column with a "Download Summary" button for each reservation row
         // Hidden for cancelled or completed reservations
@@ -253,50 +224,6 @@ public class MyReservationsController {
     @FXML
     private void handleWaitingList(ActionEvent event) {
         viewNavigator.navigateTo(event, "/fxml/WaitingList.fxml", 1000, 650);
-    }
-
-    /**
-     * Repeats the selected reservation by creating a new booking on the same
-     * route and departure schedule. Seat availability is checked before booking.
-     */
-    @FXML
-    private void handleRepeatReservation(ReservationItem item) {
-        User currentUser = userSession.getCurrentUser();
-        if (currentUser == null) {
-            showAlert("Not Logged In", "Please log in to repeat a reservation.");
-            return;
-        }
-
-        if (item.getTripId() == null) {
-            showAlert("Missing Trip Info", "Unable to repeat: trip information is missing.");
-            return;
-        }
-
-        Task<Reservation> task = new Task<>() {
-            @Override
-            protected Reservation call() throws Exception {
-                return reservationService.repeatReservation(currentUser, item.getReservationId());
-            }
-        };
-
-        task.setOnSucceeded(e -> {
-            Reservation newReservation = task.getValue();
-            showAlert("Repeat Successful",
-                    "Your reservation has been repeated successfully!\nNew code: RES-" + newReservation.getReservationId());
-            loadReservationsAsync();
-        });
-
-        task.setOnFailed(e -> {
-            Throwable ex = task.getException();
-            if (ex instanceof TripFullException) {
-                showAlert("Trip Fully Booked", "Cannot repeat: this trip is fully booked.");
-            } else if (ex != null) {
-                ex.printStackTrace();
-                showAlert("Repeat Failed", "Failed to repeat reservation: " + ex.getMessage());
-            }
-        });
-
-        new Thread(task).start();
     }
 
     /**
