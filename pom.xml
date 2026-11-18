@@ -78,6 +78,13 @@
       <artifactId>jackson-databind</artifactId>
     </dependency>
 
+    <!-- Webcam Capture for laptop camera QR scanning -->
+    <dependency>
+      <groupId>com.github.sarxos</groupId>
+      <artifactId>webcam-capture</artifactId>
+      <version>0.3.12</version>
+    </dependency>
+
     <!-- Testing -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
