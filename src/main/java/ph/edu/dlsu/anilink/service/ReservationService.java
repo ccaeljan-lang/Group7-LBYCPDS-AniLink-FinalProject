@@ -310,11 +310,27 @@ public class ReservationService {
                                     break;
                             }
 
+                            // Fetch fresh trip details from Supabase to get accurate capacity
+                            // (existing.getTrip() may have stale or missing data from JSON join)
+                            Trip tripDetail = null;
+                            try {
+                                String tripJson = supabaseService.getTripDetails(tripId);
+                                List<Trip> tripList = objectMapper.readValue(
+                                        tripJson,
+                                        new TypeReference<List<Trip>>() {}
+                                );
+                                if (tripList != null && !tripList.isEmpty()) {
+                                    tripDetail = tripList.get(0);
+                                }
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+
                             Trip trip = new Trip();
                             trip.setTripId(tripId);
-                            trip.setCapacity(existing.getTrip() != null ? existing.getTrip().getCapacity() : 0);
+                            trip.setCapacity(tripDetail != null ? tripDetail.getCapacity() : 0);
                             trip.setSeatsTaken(updatedSeats);
-                            trip.setStatus(existing.getTrip() != null ? existing.getTrip().getStatus() : "SCHEDULED");
+                            trip.setStatus(tripDetail != null ? tripDetail.getStatus() : "SCHEDULED");
 
                             createReservation(passenger, trip);
                         }
