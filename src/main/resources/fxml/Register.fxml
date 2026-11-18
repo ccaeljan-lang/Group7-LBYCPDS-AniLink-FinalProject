@@ -60,6 +60,15 @@
             <ComboBox fx:id="categoryComboBox" promptText="Select Category" prefWidth="350" maxWidth="350"/>
         </VBox>
 
+        <VBox fx:id="idNumberBox" alignment="CENTER_LEFT"
+              maxWidth="350" spacing="4">
+            <Label text="DLSU ID Number"/>
+            <TextField fx:id="idNumberField"
+                       promptText="Enter 6-12 digit DLSU ID"
+                       prefWidth="350"
+                       maxWidth="350"/>
+        </VBox>
+
         <VBox alignment="CENTER_LEFT" maxWidth="350" spacing="4">
             <Label text="Password"/>
             <PasswordField fx:id="passwordField" promptText="Password" prefWidth="350" maxWidth="350"/>
