@@ -30,10 +30,8 @@
               style="-fx-background-color: #0d5c36; -fx-padding: 10 25;"
               styleClass="top-nav">
             <ImageView fitHeight="28.0" preserveRatio="true">
-                
-                        <Image url="@../images/nologotitle.png" />
-                    </image>
-                </ImageView>
+                <Image url="@../images/nologotitle.png" />
+            </ImageView>
             <Region HBox.hgrow="ALWAYS" />
             <Label fx:id="adminNameLabel" style="-fx-text-fill: #F8FAFC; -fx-font-size: 14px; -fx-font-weight: bold;" text="Welcome, Admin" />
             <Label style="-fx-text-fill: #94A3B8; -fx-font-size: 18px;" text="⚙️" />
