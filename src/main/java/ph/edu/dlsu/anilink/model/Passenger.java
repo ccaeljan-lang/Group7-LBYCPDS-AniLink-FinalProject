@@ -20,7 +20,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Passenger extends User {
 
-    private String idNumber; // e.g., DLSU ID Number (121XXXXX)
+    @JsonProperty("id_number")
+    private String idNumber;
 
     public Passenger() {
         super();
@@ -33,6 +34,7 @@ public class Passenger extends User {
             @JsonProperty("email") String email,
             @JsonProperty("password") String password,
             @JsonProperty("id_number") String idNumber) {
+
         super(userId, name, email, password);
         this.idNumber = idNumber;
     }
