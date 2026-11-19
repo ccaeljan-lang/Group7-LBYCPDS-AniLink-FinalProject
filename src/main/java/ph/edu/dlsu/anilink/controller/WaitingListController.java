@@ -150,7 +150,7 @@ public class WaitingListController {
 
     @FXML
     private void handleReservations(ActionEvent event) {
-        viewNavigator.navigateTo(event, "/fxml/Reservation.fxml", 1000, 650);
+        viewNavigator.navigateTo(event, "/fxml/Reservation.fxml", 1000, 800);
     }
 
     @FXML
