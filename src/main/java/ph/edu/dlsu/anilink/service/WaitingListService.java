@@ -36,6 +36,9 @@ public class WaitingListService {
     /**
      * Returns the 1-based position of the passenger in the waiting list for a trip,
      * or -1 if the passenger is not on the list.
+     *
+     * <p>Always reloads from Supabase to ensure position reflects the current
+     * state of the waiting list after promotions or cancellations.</p>
      */
     public int getPosition(Long tripId, Long passengerId) {
         System.out.println("DEBUG [WaitingListService] getPosition tripId=" + tripId
@@ -122,10 +125,10 @@ public class WaitingListService {
     /**
      * Promotes the next passenger in line.
      *
-     * <p>Loads the queue from Supabase if not in memory, removes the head of the
-     * FIFO queue, marks the entry as CONFIRMED in Supabase, and returns the
-     * promoted {@link WaitingList} entry. The caller is responsible for creating
-     * an actual reservation via
+     * <p>Loads the queue from Supabase, removes the head of the FIFO queue,
+     * marks the entry as CONFIRMED in Supabase, and returns the promoted
+     * {@link WaitingList} entry. The caller is responsible for creating an
+     * actual reservation via
      * {@link ph.edu.dlsu.anilink.service.ReservationService#createReservation}.
      * </p>
      *
@@ -159,52 +162,69 @@ public class WaitingListService {
 
     /**
      * Returns the full waiting list for a trip, ordered by position (FIFO).
+     *
+     * <p>Only returns entries with status {@code WAITING}.</p>
      */
     public List<WaitingList> getWaitingList(Long tripId) {
-        return new ArrayList<>(loadQueue(tripId).toList());
+        WaitingListQueue queue = loadQueue(tripId);
+        List<WaitingList> result = new ArrayList<>();
+        for (WaitingList entry : queue.toList()) {
+            if (WaitingList.STATUS_WAITING.equals(entry.getStatus())) {
+                result.add(entry);
+            }
+        }
+        return result;
     }
 
     /**
      * Loads (or reloads) the queue for a trip from Supabase.
-     * Entries are ordered by joined_at ascending (oldest first).
+     *
+     * <p>Always reloads from Supabase (no in-memory caching) to ensure the
+     * queue reflects the current state after promotions or cancellations.
+     * Only entries with status {@code WAITING} are loaded.</p>
      */
     private WaitingListQueue loadQueue(Long tripId) {
-        return queues.computeIfAbsent(tripId, k -> {
-            System.out.println("DEBUG [WaitingListService] loadQueue: loading tripId=" + tripId
-                    + " from Supabase (first time)");
-            WaitingListQueue queue = new WaitingListQueue();
-            try {
-                String json = supabaseService.getWaitingListByTrip(tripId);
-                if (json == null || json.isBlank()) {
-                    System.out.println("DEBUG [WaitingListService] loadQueue: empty response from Supabase");
-                    return queue;
-                }
+        System.out.println("DEBUG [WaitingListService] loadQueue: loading tripId=" + tripId
+                + " from Supabase");
 
-                JsonNode root = objectMapper.readTree(json);
-                if (root.isArray()) {
-                    System.out.println("DEBUG [WaitingListService] loadQueue: found "
-                            + root.size() + " entries in Supabase");
-                    for (JsonNode node : root) {
-                        WaitingList entry = new WaitingList();
-                        entry.setId(node.path("id").asLong());
-                        entry.setTripId(node.path("trip_id").asLong());
-                        entry.setPassengerId(node.path("passenger_id").asLong());
-
-                        JsonNode passenger = node.path("passenger");
-                        if (!passenger.isMissingNode() && !passenger.isNull()) {
-                            entry.setPassengerName(passenger.path("name").asText("Unknown"));
-                        }
-
-                        entry.setStatus(node.path("status").asText(WaitingList.STATUS_WAITING));
-                        queue.enqueue(entry);
-                        System.out.println("DEBUG [WaitingListService] loadQueue: loaded entry passengerId="
-                                + entry.getPassengerId() + " status=" + entry.getStatus());
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+        WaitingListQueue queue = new WaitingListQueue();
+        try {
+            String json = supabaseService.getWaitingListByTrip(tripId);
+            if (json == null || json.isBlank()) {
+                System.out.println("DEBUG [WaitingListService] loadQueue: empty response from Supabase");
+                return queue;
             }
-            return queue;
-        });
+
+            JsonNode root = objectMapper.readTree(json);
+            if (root.isArray()) {
+                System.out.println("DEBUG [WaitingListService] loadQueue: found "
+                        + root.size() + " entries in Supabase");
+                for (JsonNode node : root) {
+                    String status = node.path("status").asText(WaitingList.STATUS_WAITING);
+                    // Only load WAITING entries - CONFIRMED/CANCELLED entries are no longer waiting
+                    if (!WaitingList.STATUS_WAITING.equals(status)) {
+                        continue;
+                    }
+
+                    WaitingList entry = new WaitingList();
+                    entry.setId(node.path("id").asLong());
+                    entry.setTripId(node.path("trip_id").asLong());
+                    entry.setPassengerId(node.path("passenger_id").asLong());
+
+                    JsonNode passenger = node.path("passenger");
+                    if (!passenger.isMissingNode() && !passenger.isNull()) {
+                        entry.setPassengerName(passenger.path("name").asText("Unknown"));
+                    }
+
+                    entry.setStatus(status);
+                    queue.enqueue(entry);
+                    System.out.println("DEBUG [WaitingListService] loadQueue: loaded entry passengerId="
+                            + entry.getPassengerId() + " status=" + entry.getStatus());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return queue;
     }
 }
