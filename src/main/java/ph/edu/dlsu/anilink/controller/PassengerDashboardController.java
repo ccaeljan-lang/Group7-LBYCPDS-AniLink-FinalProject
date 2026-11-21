@@ -7,6 +7,7 @@ import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
 import org.springframework.stereotype.Controller;
 import ph.edu.dlsu.anilink.model.User;
 import ph.edu.dlsu.anilink.model.WaitingList;
@@ -38,6 +39,7 @@ public class PassengerDashboardController {
     @FXML private Label passengerNameLabel;
     @FXML private Label currentTrip;
     @FXML private Label currentStatus;
+    @FXML private VBox upcomingReservationBox;
     @FXML private ListView<String> tripsListView;
     @FXML private Button bookTripButton;
     @FXML private Button logoutButton;
@@ -94,6 +96,7 @@ public class PassengerDashboardController {
                             final String activeStat = status.toUpperCase();
 
                             Platform.runLater(() -> {
+                                if (upcomingReservationBox != null) upcomingReservationBox.setVisible(true);
                                 if (currentTrip != null) currentTrip.setText(activeRoute);
                                 if (currentStatus != null) currentStatus.setText(activeStat);
                             });
@@ -107,8 +110,7 @@ public class PassengerDashboardController {
 
                 if (!activeFound) {
                     Platform.runLater(() -> {
-                        if (currentTrip != null) currentTrip.setText("No Active Reservation");
-                        if (currentStatus != null) currentStatus.setText("NONE");
+                        if (upcomingReservationBox != null) upcomingReservationBox.setVisible(false);
                     });
                 }
 
