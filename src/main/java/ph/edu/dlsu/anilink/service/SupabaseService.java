@@ -438,6 +438,7 @@ public class SupabaseService {
                 .header("Prefer", "return=representation")
                 .body(java.util.Map.of(
                         "route_id", routeId,
+                        "departure_date", departureDate,
                         "departure_time", departureTime,
                         "capacity", capacity
                 ))
