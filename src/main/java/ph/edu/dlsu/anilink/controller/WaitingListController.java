@@ -123,92 +123,101 @@ public class WaitingListController {
 
                     for (JsonNode node : array) {
 
-                        long id = node.path("id").asLong();
+                        try {
 
-                        String status = node.path("status")
-                                .asText(WaitingList.STATUS_WAITING);
+                            long id = node.path("id").asLong();
 
-                        String joinedAt = node.path("joined_at")
-                                .asText("N/A").split("T")[0];
+                            String status = node.path("status")
+                                    .asText(WaitingList.STATUS_WAITING);
 
-                        JsonNode trip = node.path("trip");
-                        JsonNode route = trip.path("route");
-                        JsonNode schedule = trip.path("schedule");
+                            String joinedAt = node.path("joined_at")
+                                    .asText("N/A").split("T")[0];
 
-                        String origin = route.path("origin")
-                                .asText("Unknown");
+                            JsonNode trip = node.path("trip");
+                            JsonNode route = trip.path("route");
+                            JsonNode schedule = trip.path("schedule");
 
-                        String destination = route.path("destination")
-                                .asText("Unknown");
+                            String origin = route.path("origin")
+                                    .asText("Unknown");
 
-                        String routeText = origin + " ↔ " + destination;
+                            String destination = route.path("destination")
+                                    .asText("Unknown");
 
-                        String departureTime = schedule
-                                .path("departure_time")
-                                .asText("N/A");
+                            String routeText = origin + " ↔ " + destination;
 
-                        // Display the scheduled travel date when available.
-                        String travelDate = schedule.path("departure_date")
-                                .asText("");
+                            String departureTime = schedule
+                                    .path("departure_time")
+                                    .asText("N/A");
 
-                        if (travelDate.isBlank()) {
-                            travelDate = joinedAt;
-                        }
+                            // Display the scheduled travel date when available.
+                            String travelDate = schedule.path("departure_date")
+                                    .asText("");
 
-                        // Use trip_id if the joined trip object is missing.
-                        long tripId = trip.path("id").asLong(
-                                node.path("trip_id").asLong(0));
+                            if (travelDate.isBlank()) {
+                                travelDate = joinedAt;
+                            }
 
-                        String queuePos;
+                            // Use trip_id if the joined trip object is missing.
+                            long tripId = trip.path("id").asLong(
+                                    node.path("trip_id").asLong(0));
 
-                        if (WaitingList.STATUS_WAITING.equalsIgnoreCase(status)) {
+                            String queuePos;
 
-                            if (tripId > 0) {
+                            if (WaitingList.STATUS_WAITING.equalsIgnoreCase(status)) {
 
-                                int position = waitingListService.getPosition(
-                                        tripId,
-                                        currentUser.getUserId());
+                                if (tripId > 0) {
 
-                                if (position > 0) {
-                                    queuePos = String.valueOf(position);
+                                    int position = waitingListService.getPosition(
+                                            tripId,
+                                            currentUser.getUserId());
+
+                                    if (position > 0) {
+                                        queuePos = String.valueOf(position);
+                                    } else {
+                                        queuePos = "—";
+                                    }
+
                                 } else {
                                     queuePos = "—";
                                 }
 
+                            } else if (WaitingList.STATUS_CONFIRMED
+                                    .equalsIgnoreCase(status)) {
+
+                                queuePos = "Promoted";
+
                             } else {
+
                                 queuePos = "—";
                             }
 
-                        } else if (WaitingList.STATUS_CONFIRMED
-                                .equalsIgnoreCase(status)) {
+                            String statusLabel;
 
-                            queuePos = "Promoted";
+                            if (WaitingList.STATUS_CONFIRMED
+                                    .equalsIgnoreCase(status)) {
 
-                        } else {
+                                statusLabel = "Promoted";
 
-                            queuePos = "—";
+                            } else {
+
+                                statusLabel = status;
+                            }
+
+                            fetchedItems.add(new WaitlistItem(
+                                    "WAIT-" + id,
+                                    routeText,
+                                    travelDate,
+                                    departureTime,
+                                    statusLabel,
+                                    queuePos
+                            ));
+                        } catch (Exception e) {
+                            LOGGER.log(
+                                    Level.WARNING,
+                                    "Failed to process waiting list entry: "
+                                            + e.getMessage(),
+                                    e);
                         }
-
-                        String statusLabel;
-
-                        if (WaitingList.STATUS_CONFIRMED
-                                .equalsIgnoreCase(status)) {
-
-                            statusLabel = "Promoted";
-
-                        } else {
-
-                            statusLabel = status;
-                        }
-
-                        fetchedItems.add(new WaitlistItem(
-                                "WAIT-" + id,
-                                routeText,
-                                travelDate,
-                                departureTime,
-                                statusLabel,
-                                queuePos
-                        ));
                     }
                 }
 
