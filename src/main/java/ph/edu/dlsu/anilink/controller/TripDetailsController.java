@@ -6,14 +6,19 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import org.springframework.stereotype.Controller;
 import ph.edu.dlsu.anilink.model.User;
 import ph.edu.dlsu.anilink.service.SupabaseService;
 import ph.edu.dlsu.anilink.util.UserSession;
 import ph.edu.dlsu.anilink.util.ViewNavigator;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * JavaFX controller for the Trip Details view.
@@ -45,8 +50,10 @@ public class TripDetailsController {
     @FXML private Label scheduleLabel;
     @FXML private Label capacityLabel;
     @FXML private Label statusLabel;
+    @FXML private Label messageLabel;
     @FXML private Button viewPassengersButton;
     @FXML private Button backButton;
+    @FXML private ChoiceBox<String> statusDropdown;
 
     private Long currentTripId;
 
@@ -64,7 +71,62 @@ public class TripDetailsController {
             driverNameLabel.setText("Welcome, " + user.getName());
         }
 
+        // Setup status dropdown items
+        statusDropdown.getItems().addAll("SCHEDULED", "BOARDING", "IN_TRANSIT", "COMPLETED");
+        statusDropdown.setValue("N/A");
+        messageLabel.setVisible(false);
+
         loadAssignedTripAsync();
+    }
+
+    private void setupListeners() {
+        // Setup status dropdown listener
+        statusDropdown.valueProperty().addListener((obs, oldVal, newVal) -> {
+            updateStatusDropdown(newVal);
+
+            // Update trip status and passengers status
+            supabaseService.updateTripStatus(currentTripId, newVal.toUpperCase());
+            updatePassengersStatus(newVal.toUpperCase());
+
+            showMessage("Updated status from " + oldVal + " to " + newVal + ".", "#15803D");
+        });
+    }
+
+    private void updatePassengersStatus(String status) {
+        Task<List<Long>> task = new Task<>() {
+            @Override
+            protected List<Long> call() throws Exception {
+                String json = supabaseService.getReservationsByTripId(currentTripId);
+                JsonNode reservations = objectMapper.readTree(json);
+                List<Long> ids = new ArrayList<>();
+
+                if (reservations.isArray() && !reservations.isEmpty()) {
+                    for (JsonNode node : reservations) {
+                        long id = node.path("id").asLong();
+                        String currentStatus = node.path("status").asText();
+
+                        if (!currentStatus.equalsIgnoreCase("CANCELLED")) {
+                            ids.add(id);
+                        }
+                    }
+                    return ids;
+                }
+                return null;
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            for (long id : task.getValue()) {
+                supabaseService.updateReservationStatus(id, status);
+            }
+        });
+
+        task.setOnFailed(e -> {
+            e.getSource().getException().printStackTrace();
+            resetLabels();
+        });
+
+        new Thread(task).start();
     }
 
     public void setTripId(Long tripId) {
@@ -146,7 +208,11 @@ public class TripDetailsController {
                 capacityLabel.setText(String.format("%d / %d", seatsTaken, capacity));
 
                 updateStatusBadge(status);
+                statusDropdown.setValue(status);
+                updateStatusDropdown(status);
                 viewPassengersButton.setDisable(false);
+
+                setupListeners();
             } else {
                 resetLabels();
             }
@@ -182,6 +248,34 @@ public class TripDetailsController {
         }
     }
 
+    private void updateStatusDropdown(String status) {
+        Node label = statusDropdown.lookup(".label");
+
+        String baseStyle = "-fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 12px; -fx-border-width: 1px; -fx-border-radius: 12px;";
+        switch (status.toUpperCase()) {
+            case "SCHEDULED":
+                statusDropdown.setStyle(baseStyle + "-fx-background-color: #DBEAFE; -fx-border-color: #1D4ED8; -fx-mark-color: #1D4ED8;");
+                if (label != null) label.setStyle("-fx-text-fill: #1D4ED8;");
+                break;
+            case "BOARDING":
+                statusDropdown.setStyle(baseStyle + "-fx-background-color: #e3d1fd; -fx-border-color: #5f0fdc; -fx-mark-color: #5f0fdc;");
+                if (label != null) label.setStyle("-fx-text-fill: #5f0fdc;");
+                break;
+            case "IN_TRANSIT":
+                statusDropdown.setStyle(baseStyle + "-fx-background-color: #FEF3C7; -fx-border-color: #B45309; -fx-mark-color: #B45309;");
+                if (label != null) label.setStyle("-fx-text-fill: #B45309;");
+                break;
+            case "COMPLETED":
+                statusDropdown.setStyle(baseStyle + "-fx-background-color: #DCFCE7; -fx-border-color: #15803D; -fx-mark-color: #15803D;");
+                if (label != null) label.setStyle("-fx-text-fill: #15803D;");
+                break;
+            default:
+                statusDropdown.setStyle(baseStyle + "-fx-background-color: #E2E8F0; -fx-border-color: #475569; -fx-mark-color: #475569;");
+                if (label != null) label.setStyle("-fx-text-fill: #475569;");
+                break;
+        }
+    }
+
     private void resetLabels() {
         Platform.runLater(() -> {
             tripIdLabel.setText("--");
@@ -189,6 +283,7 @@ public class TripDetailsController {
             scheduleLabel.setText("--");
             capacityLabel.setText("0 / 0");
             updateStatusBadge("N/A");
+            statusDropdown.setValue("N/A");
             viewPassengersButton.setDisable(true);
         });
     }
@@ -201,6 +296,12 @@ public class TripDetailsController {
             alert.setContentText(message);
             alert.showAndWait();
         });
+    }
+
+    private void showMessage(String message, String colorCode) {
+        messageLabel.setText(message);
+        messageLabel.setStyle("-fx-text-fill: " + colorCode + "; -fx-font-weight: bold; -fx-font-size: 13px;");
+        messageLabel.setVisible(true);
     }
 
     // --- Navigation Handlers ---
