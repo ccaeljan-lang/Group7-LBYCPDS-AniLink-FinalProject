@@ -404,7 +404,6 @@ public class SupabaseService {
                     .uri(uriBuilder -> uriBuilder
                             .path("/departure_schedules")
                             .queryParam("route_id", "eq." + routeId)
-                            .queryParam("departure_time", "eq." + departureDate)
                             .queryParam("departure_time", "eq." + departureTime)
                             .queryParam("select", "id")
                             .build())
