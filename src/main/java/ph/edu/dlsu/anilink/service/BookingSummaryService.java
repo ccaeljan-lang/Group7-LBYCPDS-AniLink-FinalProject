@@ -163,8 +163,10 @@ public class BookingSummaryService {
      *
      * @param image       the summary image to save
      * @param ownerStage  the owning JavaFX Stage for the file chooser dialog
+     * @return true if the image was actually written to a file, false if the
+     *         dialog was cancelled or the write failed
      */
-    public void saveToFile(BufferedImage image, Stage ownerStage) {
+    public boolean saveToFile(BufferedImage image, Stage ownerStage) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save Booking Summary");
         fileChooser.getExtensionFilters().addAll(
@@ -175,12 +177,16 @@ public class BookingSummaryService {
                 System.currentTimeMillis() + ".png");
 
         File file = fileChooser.showSaveDialog(ownerStage);
-        if (file != null) {
-            try {
-                ImageIO.write(image, "png", file);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        if (file == null) {
+            // User cancelled the dialog: not a success, not an error.
+            return false;
+        }
+        try {
+            ImageIO.write(image, "png", file);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 }

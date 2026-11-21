@@ -274,11 +274,17 @@ public class MyReservationsController {
 
             javafx.stage.Stage ownerStage =
                     (javafx.stage.Stage) reservationTable.getScene().getWindow();
-            bookingSummaryService.saveToFile(summaryImage, ownerStage);
+            boolean saved = bookingSummaryService.saveToFile(summaryImage, ownerStage);
 
-            showAlert("Booking Summary Saved",
-                    "Your booking summary and proof (RES-" + reservation.getReservationId() +
-                            ") has been saved successfully. You can view and download it again from My Reservations.");
+            if (saved) {
+                showAlert("Booking Summary Saved",
+                        "Your booking summary and proof (RES-" + reservation.getReservationId() +
+                                ") has been saved successfully. You can view and download it again from My Reservations.");
+            } else {
+                // File dialog cancelled or write failed: do not announce success.
+                showAlert("Booking Summary Not Saved",
+                        "The booking summary was not saved. You may try downloading again from My Reservations.");
+            }
         });
 
         task.setOnFailed(e -> {
