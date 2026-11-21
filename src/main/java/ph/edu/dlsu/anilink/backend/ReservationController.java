@@ -92,82 +92,14 @@ public class ReservationController {
     @PutMapping("/{id}/cancel")
     public ResponseEntity<?> cancelReservation(@PathVariable Long id) {
         try {
-            String json = supabaseService.getReservationById(id);
-            List<Reservation> list = objectMapper.readValue(json, new TypeReference<List<Reservation>>() {});
-            if (list.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-
-            Reservation reservation = list.get(0);
-            supabaseService.updateReservationStatus(id, Reservation.CANCELLED);
-
-            Long tripId = null;
-            if (reservation.getTrip() != null) {
-                tripId = reservation.getTrip().getTripId();
-                int updatedSeats = Math.max(0, reservation.getTrip().getSeatsTaken() - 1);
-                supabaseService.updateTripSeatsTaken(tripId, updatedSeats);
-            }
-
-            // Promote the next waiting passenger now that a seat has freed up
-            if (tripId != null) {
-                WaitingList promoted = waitingListService.promoteNext(tripId);
-                if (promoted != null && promoted.getPassengerId() != null) {
-                    try {
-                        String userJson = supabaseService.getUserById(promoted.getPassengerId());
-                        JsonNode userNode = objectMapper.readTree(userJson);
-                        if (userNode.isArray() && !userNode.isEmpty()) {
-                            JsonNode u = userNode.get(0);
-                            String role = u.path("role").asText("PASSENGER");
-                            User passenger;
-                            switch (role.toUpperCase()) {
-                                case "DRIVER":
-                                    passenger = new Driver(
-                                            u.path("id").asLong(),
-                                            u.path("name").asText(),
-                                            u.path("email").asText(),
-                                            u.path("password").asText(),
-                                            u.path("license_number").asText(null)
-                                    );
-                                    break;
-                                case "ADMINISTRATOR":
-                                case "ADMIN":
-                                    passenger = new Administrator(
-                                            u.path("id").asLong(),
-                                            u.path("name").asText(),
-                                            u.path("email").asText(),
-                                            u.path("password").asText(),
-                                            u.path("department").asText(null)
-                                    );
-                                    break;
-                                default:
-                                    passenger = new Passenger(
-                                            u.path("id").asLong(),
-                                            u.path("name").asText(),
-                                            u.path("email").asText(),
-                                            u.path("password").asText(),
-                                            u.path("category").asText(null)
-                                    );
-                                    break;
-                            }
-
-                            Trip trip = new Trip();
-                            trip.setTripId(tripId);
-                            trip.setCapacity(reservation.getTrip().getCapacity());
-                            trip.setSeatsTaken(reservation.getTrip().getSeatsTaken());
-                            trip.setStatus(reservation.getTrip().getStatus());
-
-                            reservationService.createReservation(passenger, trip);
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        // Promotion failure should not roll back the cancellation
-                    }
-                }
-            }
-
-            reservation.cancel();
-            return ResponseEntity.ok(reservation);
+            // Single validated cancellation/promotion workflow shared with the JavaFX UI.
+            // Never build a stale/incomplete Trip here; the service fetches fresh details.
+            Reservation cancelled = reservationService.cancelReservationAndPromote(id);
+            return ResponseEntity.ok(cancelled);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to cancel reservation.");
         }
     }
