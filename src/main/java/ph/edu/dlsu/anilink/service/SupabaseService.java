@@ -351,10 +351,12 @@ public class SupabaseService {
                 .body(String.class);
     }
 
-    // 2. Assign or re-assign a driver to an existing trip
+    // 2. Assign or re-assign a driver to an existing trip.
+    // NOTE: every other trip query and the Trip model use the primary key column "id";
+    // "trip_id" is not a trips table column, so this filter previously matched zero rows.
     public String assignDriverToTrip(Long tripId, Long driverId) {
         return restClient.patch()
-                .uri("/trips?trip_id=eq." + tripId)
+                .uri("/trips?id=eq." + tripId)
                 .header("Prefer", "return=representation")
                 .body(java.util.Map.of("driver_id", driverId))
                 .retrieve()
@@ -455,6 +457,26 @@ public class SupabaseService {
     public String getTripsWithDetails() {
         return restClient.get()
                 .uri("/trips?select=*,route:routes(*),schedule:departure_schedules(*)")
+                .retrieve()
+                .body(String.class);
+    }
+
+    /**
+     * Fetches trips that are still bookable/active (excludes COMPLETED and CANCELLED)
+     * with their route and schedule details, ordered by database id for stability.
+     *
+     * <p>Completed trips are logically retired from active listings but are NOT deleted,
+     * so reservations, waiting lists and QR/history records keep their foreign keys.
+     * Display trip numbers are computed from this active set.</p>
+     */
+    public String getActiveTripsWithDetails() {
+        return restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/trips")
+                        .queryParam("status", "in.(SCHEDULED,ARRIVING,BOARDING,IN_TRANSIT,DEPARTED)")
+                        .queryParam("select", "*,route:routes(*),schedule:departure_schedules(*)")
+                        .queryParam("order", "id.asc")
+                        .build())
                 .retrieve()
                 .body(String.class);
     }
@@ -677,7 +699,9 @@ public class SupabaseService {
         body.put("passenger_id", passengerId);
         body.put("trip_id", tripId);
         body.put("qr_payload", qrPayload);
-        body.put("status", "WAITLISTED"); // Adjust status string as needed
+        // An allocated seat reservation is an ACTIVE CONFIRMED booking, never WAITLISTED.
+        // WAITLISTED is reserved exclusively for waiting_lists queue entries.
+        body.put("status", "CONFIRMED");
 
         return restClient.post()
                 .uri("/reservations")
@@ -750,6 +774,37 @@ public class SupabaseService {
                 .body(java.util.Map.of("status", status))
                 .retrieve()
                 .toBodilessEntity();
+    }
+
+    /**
+     * Conditionally promote a waiting-list entry from WAITING to CONFIRMED.
+     *
+     * <p>The {@code status=eq.WAITING} filter makes this update succeed only when
+     * the entry is still waiting, which guards against double-promotion when
+     * cancellation/promotion requests race. This is the safe, non-RPC fallback:
+     * the reservation is created first, and the waitlist row is marked CONFIRMED
+     * only after the reservation insert succeeds.</p>
+     *
+     * @return true if the entry was found WAITING and marked CONFIRMED
+     */
+    public boolean markWaitingListConfirmed(Long waitingListId) {
+        try {
+            String response = restClient.patch()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/waiting_lists")
+                            .queryParam("id", "eq." + waitingListId)
+                            .queryParam("status", "eq." + WaitingList.STATUS_WAITING)
+                            .build())
+                    .header("Prefer", "return=representation")
+                    .body(java.util.Map.of("status", WaitingList.STATUS_CONFIRMED))
+                    .retrieve()
+                    .body(String.class);
+            JsonNode node = objectMapper.readTree(response);
+            return node != null && node.isArray() && node.size() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public void deleteWaitingListEntry(Long id) {
