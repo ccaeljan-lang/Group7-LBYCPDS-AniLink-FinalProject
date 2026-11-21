@@ -112,15 +112,36 @@ public class WaitingListController {
                         String departureTime = schedule.path("departure_time").asText("N/A");
 
                         Long tripId = trip.path("id").asLong();
-                        int queuePosition = waitingListService.getPosition(tripId, currentUser.getUserId());
+                        String status = node.path("status").asText("WAITING");
+
+                        // Only WAITING entries have a numeric queue position.
+                        // Promoted entries show "Promoted"; cancelled entries show "—".
+                        // Never show -1 as if it were a valid position.
+                        String queuePos;
+                        if (WaitingList.STATUS_WAITING.equalsIgnoreCase(status)) {
+                            int position = waitingListService.getPosition(tripId, currentUser.getUserId());
+                            queuePos = (position > 0) ? String.valueOf(position) : "\u2014";
+                        } else if (WaitingList.STATUS_CONFIRMED.equalsIgnoreCase(status)) {
+                            queuePos = "Promoted";
+                        } else {
+                            queuePos = "\u2014";
+                        }
+
+                        // Human-friendly status label for the table.
+                        String statusLabel;
+                        if (WaitingList.STATUS_CONFIRMED.equalsIgnoreCase(status)) {
+                            statusLabel = "Promoted";
+                        } else {
+                            statusLabel = status;
+                        }
 
                         fetchedItems.add(new WaitlistItem(
                                 "WAIT-" + id,
                                 routeText,
                                 joinedAt,
                                 departureTime,
-                                status,
-                                queuePosition
+                                statusLabel,
+                                queuePos
                         ));
                     }
                 }
@@ -176,9 +197,9 @@ public class WaitingListController {
         private final String date;
         private final String departureTime;
         private final String status;
-        private final int queuePos;
+        private final String queuePos; // display string: number / "Promoted" / "\u2014"
 
-        public WaitlistItem(String reservationCode, String route, String date, String departureTime, String status, int queuePos) {
+        public WaitlistItem(String reservationCode, String route, String date, String departureTime, String status, String queuePos) {
             this.waitlistCode = reservationCode;
             this.route = route;
             this.date = date;
@@ -192,6 +213,6 @@ public class WaitingListController {
         public String getDate() { return date; }
         public String getDepartureTime() { return departureTime; }
         public String getStatus() { return status; }
-        public int getQueuePos() { return queuePos; }
+        public String getQueuePos() { return queuePos; }
     }
 }
