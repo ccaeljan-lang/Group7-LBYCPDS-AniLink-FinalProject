@@ -38,7 +38,7 @@
         </ImageView>
 
         <VBox alignment="CENTER_LEFT" maxWidth="350">
-            <Label text="Passenger Registration" styleClass="header-label">
+            <Label text="User Registration" styleClass="header-label">
                 <VBox.margin>
                     <Insets bottom="10"/>
                 </VBox.margin>
