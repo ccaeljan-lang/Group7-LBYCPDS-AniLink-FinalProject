@@ -77,18 +77,16 @@ public class ReservationService {
         String qrPayload = "ANILINK-RES-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         try {
-            // 1. Reserve seat in Supabase first (if this fails, no reservation record is created)
-            int updatedSeats = trip.getSeatsTaken() + 1;
-            supabaseService.updateTripSeatsTaken(trip.getTripId(), updatedSeats);
-
-            // 2. Post reservation record to Supabase
+            // 1. Post the reservation record FIRST so a seat is never counted
+            //    without an actual reservation row. postReservation writes
+            //    status = CONFIRMED for an allocated seat reservation.
             String responseJson = supabaseService.postReservation(
                     user.getUserId(),
                     trip.getTripId(),
                     qrPayload
             );
 
-            // 3. Parse created reservation response
+            // 2. Parse created reservation response
             List<Reservation> createdList = objectMapper.readValue(
                     responseJson,
                     new TypeReference<List<Reservation>>() {}
@@ -98,11 +96,22 @@ public class ReservationService {
                 throw new RuntimeException("Failed to retrieve created reservation record from Supabase.");
             }
 
-            // 4. Update local trip object state only after both remote calls succeed
+            Reservation created = createdList.get(0);
+
+            // 3. Count the seat only after the reservation row exists. If the seat
+            //    update fails, the reservation is still valid and syncSeatsTaken()
+            //    can reconcile the count; the reverse (seat taken, no reservation)
+            //    is the unsafe state we avoid.
+            int updatedSeats = trip.getSeatsTaken() + 1;
+            supabaseService.updateTripSeatsTaken(trip.getTripId(), updatedSeats);
             trip.setSeatsTaken(updatedSeats);
 
-            return createdList.get(0);
+            // 4. Surface the persisted status (CONFIRMED) and unique QR payload.
+            created.setStatus(Reservation.CONFIRMED);
+            return created;
 
+        } catch (TripFullException e) {
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Unable to save reservation to Supabase: " + e.getMessage(), e);
@@ -222,17 +231,30 @@ public class ReservationService {
     }
 
     /**
-     * Cancels a reservation from the passenger's standpoint.
+     * Cancels a reservation and promotes the next waiting passenger into the
+     * freed seat. This is the single cancellation/promotion operation used by
+     * both the JavaFX UI and the REST API (see {@code backend.ReservationController}).
      *
-     * <p>Marks the reservation as CANCELLED in Supabase, decrements the trip's
-     * {@code seats_taken} count, and promotes the next waiting passenger (if any)
-     * into the freed seat.</p>
+     * <p>Steps:
+     * <ol>
+     *   <li>Reject null or missing reservation IDs.</li>
+     *   <li>Reject CANCELLED or COMPLETED bookings: no double seat decrement and
+     *       no double promotion.</li>
+     *   <li>Mark the reservation CANCELLED in Supabase.</li>
+     *   <li>Decrement the trip's seats_taken using fresh trip details.</li>
+     *   <li>If the trip is still active, promote the next FIFO waiting passenger
+     *       into the freed seat: create an actual CONFIRMED reservation for them,
+     *       and only then mark their waitlist entry CONFIRMED.</li>
+     * </ol>
+     * Promotion is intentionally not rolled back if it fails: the cancellation
+     * stands, the freed seat stays available, and a retry can promote again.
+     * </p>
      *
      * @param reservationId the ID of the reservation to cancel
      * @return the cancelled {@link Reservation}
-     * @throws IllegalStateException if the reservation cannot be found or is already cancelled
+     * @throws IllegalStateException if the reservation cannot be found or is already cancelled/completed
      */
-    public Reservation cancelReservation(Long reservationId) {
+    public Reservation cancelReservationAndPromote(Long reservationId) {
         if (reservationId == null) {
             throw new IllegalArgumentException("Reservation ID is required.");
         }
@@ -250,9 +272,13 @@ public class ReservationService {
             }
 
             Reservation existing = reservations.get(0);
+            String status = existing.getStatus() != null ? existing.getStatus() : "";
 
-            if (Reservation.CANCELLED.equalsIgnoreCase(existing.getStatus())) {
+            if (Reservation.CANCELLED.equalsIgnoreCase(status)) {
                 throw new IllegalStateException("This reservation is already cancelled.");
+            }
+            if (Reservation.COMPLETED.equalsIgnoreCase(status)) {
+                throw new IllegalStateException("This reservation is completed and cannot be cancelled.");
             }
 
             Long tripId = existing.getTrip() != null ? existing.getTrip().getTripId() : null;
@@ -260,84 +286,41 @@ public class ReservationService {
             // 2. Mark reservation as CANCELLED in Supabase
             supabaseService.updateReservationStatus(reservationId, Reservation.CANCELLED);
 
-            // 3. Decrement seats_taken on the trip
+            // 3. Decrement seats_taken using fresh trip details (never a stale copy)
+            int updatedSeats = 0;
+            String tripStatus = Trip.SCHEDULED;
             if (tripId != null) {
-                int currentSeatsTaken = existing.getTrip() != null
-                        ? existing.getTrip().getSeatsTaken()
-                        : 0;
-                int updatedSeats = Math.max(0, currentSeatsTaken - 1);
-                supabaseService.updateTripSeatsTaken(tripId, updatedSeats);
-
-                // 4. Promote the next waiting passenger into the freed seat
-                WaitingList promoted = waitingListService.promoteNext(tripId);
-                if (promoted != null && promoted.getPassengerId() != null) {
-                    try {
-                        String userJson = supabaseService.getUserById(promoted.getPassengerId());
-                        com.fasterxml.jackson.databind.JsonNode userNode =
-                                objectMapper.readTree(userJson);
-                        if (userNode.isArray() && !userNode.isEmpty()) {
-                            com.fasterxml.jackson.databind.JsonNode u = userNode.get(0);
-                            String role = u.path("role").asText("PASSENGER");
-                            User passenger;
-                            switch (role.toUpperCase()) {
-                                case "DRIVER":
-                                    passenger = new ph.edu.dlsu.anilink.model.Driver(
-                                            u.path("id").asLong(),
-                                            u.path("name").asText(),
-                                            u.path("email").asText(),
-                                            u.path("password").asText(),
-                                            u.path("license_number").asText(null)
-                                    );
-                                    break;
-                                case "ADMINISTRATOR":
-                                case "ADMIN":
-                                    passenger = new ph.edu.dlsu.anilink.model.Administrator(
-                                            u.path("id").asLong(),
-                                            u.path("name").asText(),
-                                            u.path("email").asText(),
-                                            u.path("password").asText(),
-                                            u.path("department").asText(null)
-                                    );
-                                    break;
-                                default:
-                                    passenger = new ph.edu.dlsu.anilink.model.Passenger(
-                                            u.path("id").asLong(),
-                                            u.path("name").asText(),
-                                            u.path("email").asText(),
-                                            u.path("password").asText(),
-                                            u.path("category").asText(null)
-                                    );
-                                    break;
-                            }
-
-                            // Fetch fresh trip details from Supabase to get accurate capacity
-                            // (existing.getTrip() may have stale or missing data from JSON join)
-                            Trip tripDetail = null;
-                            try {
-                                String tripJson = supabaseService.getTripDetails(tripId);
-                                List<Trip> tripList = objectMapper.readValue(
-                                        tripJson,
-                                        new TypeReference<List<Trip>>() {}
-                                );
-                                if (tripList != null && !tripList.isEmpty()) {
-                                    tripDetail = tripList.get(0);
-                                }
-                            } catch (Exception ex) {
-                                ex.printStackTrace();
-                            }
-
-                            Trip trip = new Trip();
-                            trip.setTripId(tripId);
-                            trip.setCapacity(tripDetail != null ? tripDetail.getCapacity() : 0);
-                            trip.setSeatsTaken(updatedSeats);
-                            trip.setStatus(tripDetail != null ? tripDetail.getStatus() : "SCHEDULED");
-
-                            createReservation(passenger, trip);
-                        }
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                        // Promotion failure should not roll back the cancellation
+                try {
+                    String tripJson = supabaseService.getTripDetails(tripId);
+                    List<Trip> tripList = objectMapper.readValue(
+                            tripJson,
+                            new TypeReference<List<Trip>>() {}
+                    );
+                    if (tripList != null && !tripList.isEmpty()) {
+                        Trip fresh = tripList.get(0);
+                        int currentSeatsTaken = fresh.getSeatsTaken();
+                        updatedSeats = Math.max(0, currentSeatsTaken - 1);
+                        tripStatus = fresh.getStatus() != null ? fresh.getStatus() : Trip.SCHEDULED;
                     }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    // Fall back to the reservation's cached trip state
+                    int currentSeatsTaken = existing.getTrip() != null
+                            ? existing.getTrip().getSeatsTaken() : 0;
+                    updatedSeats = Math.max(0, currentSeatsTaken - 1);
+                }
+                supabaseService.updateTripSeatsTaken(tripId, updatedSeats);
+            }
+
+            // 4. Promote the next waiting passenger into the freed seat, but only
+            //    into an active trip. Never promote into a cancelled/completed trip.
+            if (tripId != null && isActiveTrip(tripStatus)) {
+                try {
+                    promoteAndReserve(tripId);
+                } catch (Exception ex) {
+                    // Promotion failure must not roll back the cancellation. The freed
+                    // seat stays available and the next cancellation/retry can promote.
+                    ex.printStackTrace();
                 }
             }
 
@@ -350,5 +333,128 @@ public class ReservationService {
             e.printStackTrace();
             throw new RuntimeException("Failed to cancel reservation: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Cancels a reservation from the passenger's standpoint.
+     *
+     * <p>Delegates to {@link #cancelReservationAndPromote(Long)} so the UI and the
+     * REST API share exactly one validated cancellation/promotion workflow and
+     * cannot diverge in behavior.</p>
+     *
+     * @param reservationId the ID of the reservation to cancel
+     * @return the cancelled {@link Reservation}
+     * @throws IllegalStateException if the reservation cannot be found or is already cancelled/completed
+     * @see #cancelReservationAndPromote(Long)
+     */
+    public Reservation cancelReservation(Long reservationId) {
+        return cancelReservationAndPromote(reservationId);
+    }
+
+    /**
+     * Promotes the next FIFO waiting passenger for a trip into an actual
+     * CONFIRMED reservation.
+     *
+     * <p>The waitlist entry is marked CONFIRMED only after the reservation row is
+     * successfully persisted. This is NOT a multi-call atomic transaction (Supabase
+     * is reached through independent REST calls). On any failure the entry is left
+     * WAITING so it can be retried; no seat is falsely taken and no
+     * CONFIRMED-without-reservation state is created.</p>
+     *
+     * @param tripId the trip whose freed seat is being filled
+     */
+    private void promoteAndReserve(Long tripId) {
+        WaitingList candidate = waitingListService.promoteNext(tripId);
+        if (candidate == null || candidate.getPassengerId() == null) {
+            return; // no one waiting
+        }
+
+        Long passengerId = candidate.getPassengerId();
+
+        // Validate the passenger is a real PASSENGER before promoting.
+        User passenger = fetchUserAsPassenger(passengerId);
+        if (passenger == null) {
+            // Not a passenger / not found: leave the entry WAITING, non-destructively.
+            return;
+        }
+
+        // Always retrieve fresh, complete trip details (route + schedule) before
+        // validating/promoting. Never promote with a half-populated Trip.
+        Trip freshTrip = fetchFreshTrip(tripId);
+        if (freshTrip == null) {
+            return;
+        }
+
+        Trip bookingTrip = new Trip();
+        bookingTrip.setTripId(freshTrip.getTripId());
+        bookingTrip.setRoute(freshTrip.getRoute());
+        bookingTrip.setSchedule(freshTrip.getSchedule());
+        bookingTrip.setCapacity(freshTrip.getCapacity());
+        bookingTrip.setSeatsTaken(freshTrip.getSeatsTaken());
+        bookingTrip.setStatus(freshTrip.getStatus());
+
+        // Validate passenger role, route/booking quota, duplicate reservations,
+        // seat availability and total capacity via the normal booking path.
+        if (!canBook(passenger, bookingTrip)) {
+            // Ineligible (quota/duplicate/full): leave entry WAITING, non-destructively.
+            return;
+        }
+
+        // Create the actual CONFIRMED reservation with a unique UUID-based QR payload.
+        createReservation(passenger, bookingTrip);
+
+        // Only now, after the reservation really exists, mark the waitlist entry CONFIRMED.
+        // The conditional update (WAITING only) guards against double promotion on retry.
+        waitingListService.confirmPromotion(candidate.getId());
+    }
+
+    private User fetchUserAsPassenger(Long passengerId) {
+        try {
+            String userJson = supabaseService.getUserById(passengerId);
+            com.fasterxml.jackson.databind.JsonNode userNode = objectMapper.readTree(userJson);
+            if (userNode == null || !userNode.isArray() || userNode.isEmpty()) {
+                return null;
+            }
+            com.fasterxml.jackson.databind.JsonNode u = userNode.get(0);
+            String role = u.path("role").asText("PASSENGER");
+            if (!"PASSENGER".equalsIgnoreCase(role)) {
+                return null;
+            }
+            return new ph.edu.dlsu.anilink.model.Passenger(
+                    u.path("id").asLong(),
+                    u.path("name").asText(),
+                    u.path("email").asText(),
+                    u.path("password").asText(),
+                    u.path("category").asText(null)
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private Trip fetchFreshTrip(Long tripId) {
+        try {
+            String tripJson = supabaseService.getTripDetails(tripId);
+            List<Trip> tripList = objectMapper.readValue(
+                    tripJson,
+                    new TypeReference<List<Trip>>() {}
+            );
+            if (tripList == null || tripList.isEmpty()) {
+                return null;
+            }
+            return tripList.get(0);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private boolean isActiveTrip(String status) {
+        if (status == null) {
+            return false;
+        }
+        return !Trip.COMPLETED.equalsIgnoreCase(status)
+                && !Trip.CANCELLED.equalsIgnoreCase(status);
     }
 }

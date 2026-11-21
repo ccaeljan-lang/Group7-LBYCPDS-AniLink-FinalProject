@@ -125,14 +125,14 @@ public class WaitingListService {
     /**
      * Promotes the next passenger in line.
      *
-     * <p>Loads the queue from Supabase, removes the head of the FIFO queue,
-     * marks the entry as CONFIRMED in Supabase, and returns the promoted
-     * {@link WaitingList} entry. The caller is responsible for creating an
-     * actual reservation via
-     * {@link ph.edu.dlsu.anilink.service.ReservationService#createReservation}.
-     * </p>
+     * <p>Loads the queue from Supabase (source of truth; only WAITING entries are
+     * loaded), removes and returns the head of the FIFO queue. Critically, this
+     * method does NOT mark the entry CONFIRMED in Supabase. The entry stays
+     * WAITING until {@link #confirmPromotion(Long)} is called only after the
+     * caller has successfully persisted an actual reservation. This prevents the
+     * silent CONFIRMED-without-reservation state if reservation creation fails.</p>
      *
-     * @return the promoted entry, or null if the queue is empty
+     * @return the promoted candidate entry, or null if the queue is empty
      */
     public WaitingList promoteNext(Long tripId) {
         System.out.println("DEBUG [WaitingListService] promoteNext tripId=" + tripId);
@@ -149,15 +149,30 @@ public class WaitingListService {
             return null;
         }
 
-        System.out.println("DEBUG [WaitingListService] promoteNext: promoting passengerId="
-                + next.getPassengerId() + " name=" + next.getPassengerName());
-
-        next.setStatus(WaitingList.STATUS_CONFIRMED);
-        if (next.getId() != null) {
-            supabaseService.updateWaitingListStatus(next.getId(), WaitingList.STATUS_CONFIRMED);
-            System.out.println("DEBUG [WaitingListService] promoteNext: Supabase status updated to CONFIRMED");
-        }
+        System.out.println("DEBUG [WaitingListService] promoteNext: candidate passengerId="
+                + next.getPassengerId() + " name=" + next.getPassengerName()
+                + " (left WAITING in Supabase until reservation is persisted)");
         return next;
+    }
+
+    /**
+     * Marks a promoted waiting-list entry CONFIRMED in Supabase.
+     *
+     * <p>Only entries that are still WAITING are flipped (conditional update), so
+     * racing cancellation/promotion requests cannot double-promote the same seat.
+     * Must be called only after the corresponding reservation row has been
+     * successfully inserted.</p>
+     *
+     * @return true if the entry was found WAITING and marked CONFIRMED
+     */
+    public boolean confirmPromotion(Long waitingListId) {
+        if (waitingListId == null) {
+            return false;
+        }
+        boolean confirmed = supabaseService.markWaitingListConfirmed(waitingListId);
+        System.out.println("DEBUG [WaitingListService] confirmPromotion waitingListId="
+                + waitingListId + " -> " + confirmed);
+        return confirmed;
     }
 
     /**
