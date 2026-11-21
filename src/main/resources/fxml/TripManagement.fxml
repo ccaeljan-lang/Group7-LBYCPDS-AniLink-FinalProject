@@ -93,16 +93,21 @@
                         </VBox>
                     </HBox>
 
-                    <!-- Row 2: Assign Driver and Initial Status -->
+                    <!-- Row 2: Assign Driver, Vehicle Type, and Initial Status -->
                     <HBox spacing="15.0" alignment="CENTER_LEFT">
                         <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                             <Label text="Assign Driver" style="-fx-text-fill: #475569; -fx-font-size: 12px;"/>
-                            <ComboBox fx:id="driverComboBox" promptText="Select Driver" prefWidth="220" style="-fx-background-color: #F1F5F9; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+                            <ComboBox fx:id="driverComboBox" promptText="Select Driver" prefWidth="180" style="-fx-background-color: #F1F5F9; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+                        </VBox>
+
+                        <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+                            <Label text="Vehicle Type" style="-fx-text-fill: #475569; -fx-font-size: 12px;"/>
+                            <ComboBox fx:id="vehicleTypeComboBox" promptText="Select Vehicle" prefWidth="160" style="-fx-background-color: #F1F5F9; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
                         </VBox>
 
                         <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                             <Label text="Initial Status" style="-fx-text-fill: #475569; -fx-font-size: 12px;"/>
-                            <ComboBox fx:id="statusComboBox" promptText="Status" prefWidth="180" style="-fx-background-color: #F1F5F9; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
+                            <ComboBox fx:id="statusComboBox" promptText="Status" prefWidth="150" style="-fx-background-color: #F1F5F9; -fx-border-color: #CBD5E1; -fx-border-radius: 6; -fx-background-radius: 6;"/>
                         </VBox>
                     </HBox>
 

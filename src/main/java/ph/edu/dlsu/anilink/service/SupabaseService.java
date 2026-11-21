@@ -330,8 +330,8 @@ public class SupabaseService {
                 .body(String.class);
     }
 
-    // 1. Updated createTrip to accept driverId and status dynamically
-    public String createTrip(Long routeId, Long scheduleId, Long driverId, int capacity, String status) {
+    // 1. Updated createTrip to accept driverId, status, and vehicleType dynamically
+    public String createTrip(Long routeId, Long scheduleId, Long driverId, int capacity, String status, String vehicleType) {
         java.util.Map<String, Object> bodyMap = new java.util.HashMap<>();
         bodyMap.put("route_id", routeId);
         bodyMap.put("schedule_id", scheduleId);
@@ -341,6 +341,10 @@ public class SupabaseService {
 
         if (driverId != null) {
             bodyMap.put("driver_id", driverId);
+        }
+
+        if (vehicleType != null && !vehicleType.isBlank()) {
+            bodyMap.put("vehicle_type", vehicleType);
         }
 
         return restClient.post()

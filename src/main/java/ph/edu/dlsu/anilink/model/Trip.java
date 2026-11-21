@@ -57,6 +57,9 @@ public class Trip implements Trackable {
     @JsonProperty("status")
     private String status;
 
+    @JsonProperty("vehicle_type")
+    private String vehicleType;
+
     @JsonProperty("current_lat")
     private double currentLat;
 
@@ -169,6 +172,14 @@ public class Trip implements Trackable {
         this.status = status;
     }
 
+    public String getVehicleType() {
+        return vehicleType;
+    }
+
+    public void setVehicleType(String vehicleType) {
+        this.vehicleType = vehicleType;
+    }
+
     public double getCurrentLat() {
         return currentLat;
     }
@@ -210,10 +221,11 @@ public class Trip implements Trackable {
                 ? schedule.getDepartureTime().toString()
                 : "TBD";
 
-        return String.format("TRIP #%d | %s | %s | Seats: %d/%d | [%s]",
+        return String.format("TRIP #%d | %s | %s | %s | Seats: %d/%d | [%s]",
                 tripId != null ? tripId : 0,
                 routeInfo,
                 timeInfo,
+                vehicleType != null ? vehicleType : "N/A",
                 seatsTaken,
                 capacity,
                 status != null ? status : "SCHEDULED");

@@ -42,6 +42,7 @@ public class TripManagementController extends AbstractAdminController {
     @FXML private ComboBox<DepartureSchedule> scheduleComboBox;
     @FXML private ComboBox<User> driverComboBox;
     @FXML private ComboBox<String> statusComboBox;
+    @FXML private ComboBox<String> vehicleTypeComboBox;
     @FXML private ComboBox<User> updateDriverComboBox;
     @FXML private ComboBox<String> updateStatusComboBox;
     @FXML private ListView<Trip> tripListView;
@@ -79,6 +80,12 @@ public class TripManagementController extends AbstractAdminController {
         statusComboBox.setValue("SCHEDULED");
 
         updateStatusComboBox.setItems(statuses);
+
+        ObservableList<String> vehicleTypes = FXCollections.observableArrayList(
+                "Shuttle", "Coaster", "Bus"
+        );
+        vehicleTypeComboBox.setItems(vehicleTypes);
+        vehicleTypeComboBox.setValue("Shuttle");
 
         setupDriverComboBoxConverters();
 
@@ -145,6 +152,7 @@ public class TripManagementController extends AbstractAdminController {
         DepartureSchedule schedule = scheduleComboBox.getValue();
         User driver = driverComboBox.getValue();
         String status = statusComboBox.getValue();
+        String vehicleType = vehicleTypeComboBox.getValue();
 
         if (route == null || schedule == null) {
             showAlert(
@@ -177,7 +185,8 @@ public class TripManagementController extends AbstractAdminController {
                         schedule.getScheduleId(),
                         driverId,
                         capacity,
-                        status
+                        status,
+                        vehicleType
                 );
 
                 return null;
