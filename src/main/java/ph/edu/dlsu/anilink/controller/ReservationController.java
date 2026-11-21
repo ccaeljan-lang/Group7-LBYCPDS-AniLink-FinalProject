@@ -190,23 +190,39 @@ public class ReservationController {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                String json = supabaseService.getTripsByRoute(routeId);
+                String dateStr = date != null ? date.toString() : null;
+                String json = supabaseService.getTripsByRouteAndDate(routeId, dateStr);
                 JsonNode tripsArray = objectMapper.readTree(json);
 
                 Platform.runLater(() -> {
-                    if (tripsArray.isArray() && !tripsArray.isEmpty()) {
+                    if (tripsArray != null && tripsArray.isArray() && !tripsArray.isEmpty()) {
                         for (JsonNode trip : tripsArray) {
+                            String status = trip.path("status").asText("SCHEDULED");
+                            // Retire completed/cancelled trips from the available list;
+                            // they must not be bookable as current trips.
+                            if ("COMPLETED".equalsIgnoreCase(status)
+                                    || "CANCELLED".equalsIgnoreCase(status)) {
+                                continue;
+                            }
+
                             long id = trip.path("id").asLong();
                             String time = trip.path("schedule").path("departure_time").asText("Unknown Time");
                             int capacity = trip.path("capacity").asInt(0);
                             int seatsTaken = trip.path("seats_taken").asInt(0);
-                            String status = trip.path("status").asText("SCHEDULED");
 
                             String display = "Departure: " + time;
+                            // Avoid display collisions when two trips share a time.
+                            if (tripMap.containsKey(display)) {
+                                display = display + " [Trip #" + id + "]";
+                            }
                             tripMap.put(display, new TripDetails(id, capacity, seatsTaken, status));
                             scheduleSelection.getItems().add(display);
                         }
-                        showMessage("", "#334155");
+                        if (scheduleSelection.getItems().isEmpty()) {
+                            showMessage("No available trips for selected route and date.", "#DC2626");
+                        } else {
+                            showMessage("", "#334155");
+                        }
                     } else {
                         showMessage("No schedules found for selected route and date.", "#DC2626");
                     }
