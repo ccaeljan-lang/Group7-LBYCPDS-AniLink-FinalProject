@@ -51,6 +51,7 @@
                 <TableView fx:id="reservationTable" style="-fx-background-color: transparent; -fx-border-color: #E2E8F0; -fx-border-radius: 8px;" VBox.vgrow="ALWAYS">
                     <columns>
                         <TableColumn fx:id="reservationCodeColumn" prefWidth="150.0" text="Reservation Code" />
+                        <TableColumn fx:id="tripNumberColumn" prefWidth="100.0" text="Trip #" />
                         <TableColumn fx:id="routeColumn" prefWidth="250.0" text="Route" />
                         <TableColumn fx:id="dateColumn" prefWidth="130.0" text="Date" />
                         <TableColumn fx:id="departureColumn" prefWidth="130.0" text="Departure" />

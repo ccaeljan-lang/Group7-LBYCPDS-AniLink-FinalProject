@@ -21,7 +21,11 @@ import ph.edu.dlsu.anilink.util.ViewNavigator;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import ph.edu.dlsu.anilink.dsa.TripInsertionSort;
 
 /**
  * JavaFX controller for the passenger's My Reservations view.
@@ -54,6 +58,7 @@ public class MyReservationsController {
     @FXML private TableColumn<ReservationItem, String> statusColumn;
     @FXML private TableColumn<ReservationItem, String> downloadColumn;
     @FXML private TableColumn<ReservationItem, String> cancelColumn;
+    @FXML private TableColumn<ReservationItem, String> tripNumberColumn;
 
     private final ObservableList<ReservationItem> reservationList = FXCollections.observableArrayList();
 
@@ -141,6 +146,9 @@ public class MyReservationsController {
             }
         });
 
+        // Trip Number column: user-facing display ordinal, NOT the database id.
+        tripNumberColumn.setCellValueFactory(new PropertyValueFactory<>("tripNumber"));
+
         reservationTable.setItems(reservationList);
     }
 
@@ -153,6 +161,12 @@ public class MyReservationsController {
         Task<List<ReservationItem>> task = new Task<>() {
             @Override
             protected List<ReservationItem> call() throws Exception {
+                // 1. Compute user-facing trip numbers from ACTIVE trips only.
+                //    COMPLETED/CANCELLED trips are excluded so they never inflate
+                //    the visible numbers, while their reservation history is retained.
+                Map<Long, Integer> tripNumbers = computeActiveTripNumbers();
+
+                // 2. Load this passenger's reservations (nested trip/route/schedule).
                 List<ReservationItem> fetchedItems = new ArrayList<>();
                 String json = supabaseService.getReservationsByPassenger(currentUser.getUserId());
                 JsonNode array = objectMapper.readTree(json);
@@ -175,18 +189,29 @@ public class MyReservationsController {
                         String routeText = origin + " ↔ " + destination;
                         String departureTime = schedule.path("departure_time").asText("N/A");
 
+                        // Travel date from the trip's schedule; fall back to booking date
+                        // for legacy records with no departure date.
+                        String departureDate = schedule.path("departure_date").asText(null);
+                        String travelDate = (departureDate != null && !departureDate.isBlank())
+                                ? departureDate : createdAt;
+
                         fetchedItems.add(new ReservationItem(
                                 id,
                                 "RES-" + id,
                                 routeText,
-                                createdAt,
+                                travelDate,
                                 departureTime,
                                 status,
                                 tripId,
-                                scheduleId
+                                scheduleId,
+                                tripId != null ? tripNumbers.getOrDefault(tripId, -1) : -1
                         ));
                     }
                 }
+
+                // 3. Stable Insertion Sort by numeric trip number (DSA requirement).
+                //    #2 must precede #10; equal trip numbers keep their relative order.
+                TripInsertionSort.sortByTripNumber(fetchedItems);
                 return fetchedItems;
             }
         };
@@ -203,6 +228,81 @@ public class MyReservationsController {
         });
 
         new Thread(task).start();
+    }
+
+    /**
+     * Computes the user-facing trip number for every active trip.
+     *
+     * <p>The number is a display ordinal (1-based) assigned to active trips ordered
+     * by travel date, then departure time, then database id. COMPLETED and CANCELLED
+     * trips are excluded so they never inflate the visible numbers; their reservation
+     * history and foreign keys are retained. The number is NOT the Supabase trips.id
+     * and is never written to the database or used as a foreign key.</p>
+     *
+     * @return map of tripId -> display trip number for active trips
+     * @throws Exception if the active-trip listing cannot be fetched or parsed
+     */
+    private Map<Long, Integer> computeActiveTripNumbers() throws Exception {
+        Map<Long, Integer> numbers = new HashMap<>();
+        String json = supabaseService.getActiveTripsWithDetails();
+        JsonNode array = objectMapper.readTree(json);
+        if (array == null || !array.isArray()) {
+            return numbers;
+        }
+
+        List<JsonNode> active = new ArrayList<>();
+        for (JsonNode node : array) {
+            active.add(node);
+        }
+
+        // Insertion Sort by (departure date, departure time, id) for stable numbering.
+        for (int i = 1; i < active.size(); i++) {
+            JsonNode current = active.get(i);
+            int j = i - 1;
+            while (j >= 0 && compareActiveTrips(active.get(j), current) > 0) {
+                active.set(j + 1, active.get(j));
+                j--;
+            }
+            active.set(j + 1, current);
+        }
+
+        int number = 1;
+        for (JsonNode node : active) {
+            Long tripId = tripId(node);
+            if (tripId != null) {
+                numbers.put(tripId, number++);
+            }
+        }
+        return numbers;
+    }
+
+    private static int compareActiveTrips(JsonNode a, JsonNode b) {
+        int c = compareTextNullSafe(travelDate(a), travelDate(b));
+        if (c != 0) return c;
+        c = compareTextNullSafe(departureTime(a), departureTime(b));
+        if (c != 0) return c;
+        return Long.compare(tripId(a), tripId(b));
+    }
+
+    private static String travelDate(JsonNode trip) {
+        JsonNode schedule = trip.path("schedule");
+        return schedule.path("departure_date").asText(null);
+    }
+
+    private static String departureTime(JsonNode trip) {
+        JsonNode schedule = trip.path("schedule");
+        return schedule.path("departure_time").asText(null);
+    }
+
+    private static Long tripId(JsonNode trip) {
+        return trip.path("id").asLong();
+    }
+
+    private static int compareTextNullSafe(String a, String b) {
+        if (a == null && b == null) return 0;
+        if (a == null) return 1;
+        if (b == null) return -1;
+        return a.compareTo(b);
     }
 
     // Navigation Action Handlers
@@ -380,14 +480,20 @@ public class MyReservationsController {
         private final Long reservationId;
         private final String reservationCode;
         private final String route;
+        // date holds the TRAVEL date (trip.schedule.departure_date, fallback to
+        // booking created_at for legacy records), not the database id.
         private final String date;
         private final String departureTime;
         private final String status;
         private final Long tripId;
         private final Long scheduleId;
+        // tripNumber is the user-facing display ordinal (1-based among active trips),
+        // NOT the immutable Supabase trips.id primary key. -1 means unknown.
+        private final int tripNumber;
 
         public ReservationItem(Long reservationId, String reservationCode, String route, String date,
-                               String departureTime, String status, Long tripId, Long scheduleId) {
+                               String departureTime, String status, Long tripId, Long scheduleId,
+                               int tripNumber) {
             this.reservationId = reservationId;
             this.reservationCode = reservationCode;
             this.route = route;
@@ -396,6 +502,7 @@ public class MyReservationsController {
             this.status = status;
             this.tripId = tripId;
             this.scheduleId = scheduleId;
+            this.tripNumber = tripNumber;
         }
 
         public Long getReservationId() { return reservationId; }
@@ -406,5 +513,6 @@ public class MyReservationsController {
         public String getStatus() { return status; }
         public Long getTripId() { return tripId; }
         public Long getScheduleId() { return scheduleId; }
+        public int getTripNumber() { return tripNumber; }
     }
 }
