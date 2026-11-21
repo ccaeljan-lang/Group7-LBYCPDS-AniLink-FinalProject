@@ -199,10 +199,6 @@ public class SupabaseService {
                         java.util.Map.of(
                                 "id", schedule.getScheduleId(),
                                 "route_id", schedule.getRoute().getRouteId(),
-                                "departure_date",
-                                schedule.getDepartureDate() != null
-                                        ? schedule.getDepartureDate().toString()
-                                        : null,
                                 "departure_time",
                                 schedule.getDepartureTime() != null
                                         ? schedule.getDepartureTime().toString()
@@ -408,7 +404,7 @@ public class SupabaseService {
                     .uri(uriBuilder -> uriBuilder
                             .path("/departure_schedules")
                             .queryParam("route_id", "eq." + routeId)
-                            .queryParam("departure_date", "eq." + departureDate)
+                            .queryParam("departure_time", "eq." + departureDate)
                             .queryParam("departure_time", "eq." + departureTime)
                             .queryParam("select", "id")
                             .build())
@@ -443,7 +439,6 @@ public class SupabaseService {
                 .header("Prefer", "return=representation")
                 .body(java.util.Map.of(
                         "route_id", routeId,
-                        "departure_date", departureDate,
                         "departure_time", departureTime,
                         "capacity", capacity
                 ))
@@ -691,7 +686,7 @@ public class SupabaseService {
                 .uri(uriBuilder -> uriBuilder
                         .path("/trips")
                         .queryParam("route_id", "eq." + routeId)
-                        .queryParam("schedule.departure_date", "eq." + dateStr)
+                        .queryParam("schedule.departure_time", "eq." + dateStr)
                         .queryParam("select", "*,schedule:departure_schedules(*)")
                         .build())
                 .retrieve()
