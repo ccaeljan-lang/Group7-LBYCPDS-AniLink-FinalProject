@@ -1,0 +1,119 @@
+-- ============================================================================
+-- AniLink: Optional Waitlist Promotion / Reservation Integrity Migration
+-- FILE: docs/migrations/001_waitlist_promotion_safe_fallback.sql
+-- STATUS: NOT APPLIED — reviewable only. Do NOT apply to production Supabase
+--         without DBA review and team approval.
+--
+-- PURPOSE:
+--   Provide an optional, truly atomic server-side path for cancellation +
+--   waitlist promotion (reservation insert, seat decrement, waitlist confirm
+--   in one transaction with row locks), plus a unique index to prevent
+--   duplicate active reservations for the same user/trip.
+--
+-- CONTEXT:
+--   The committed Java implementation (branch master, HEAD 454b201) already
+--   fixes waitlist promotion using a safe non-RPC fallback:
+--     1. Reservation row is created (status CONFIRMED) BEFORE the waitlist
+--        entry is marked CONFIRMED, so no CONFIRMED-without-reservation state.
+--     2. The waitlist update is conditional (WAITING only), guarding against
+--        double promotion on concurrent retries.
+--     3. Failures leave the entry WAITING for retry; cancellation is not
+--        rolled back, so the freed seat stays available.
+--   This fallback is NOT a multi-call atomic transaction. The RPC below is
+--   the stronger alternative IF schema access/approval become available.
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- (A) Optional atomic RPC: cancel a reservation and promote the next waiter.
+--     Runs in one transaction with row locks; rechecks state before mutating.
+--     Returns the promoted reservation id (or null).
+-- ----------------------------------------------------------------------------
+-- CREATE OR REPLACE FUNCTION anilink.cancel_and_promote(p_reservation_id bigint)
+-- RETURNS bigint
+-- LANGUAGE plpgsql
+-- AS $$
+-- DECLARE
+--     v_trip_id bigint;
+--     v_status text;
+--     v_seats_taken int;
+--     v_waiting_id bigint;
+--     v_passenger_id bigint;
+--     v_promoted_reservation_id bigint;
+-- BEGIN
+--     -- Lock the reservation row and read its trip/status.
+--     SELECT trip_id, status INTO v_trip_id, v_status
+--     FROM reservations
+--     WHERE id = p_reservation_id
+--     FOR UPDATE;
+--
+--     IF v_status = 'CANCELLED' OR v_status = 'COMPLETED' THEN
+--         RAISE EXCEPTION 'Reservation already %', v_status;
+--     END IF;
+--
+--     -- Cancel the reservation.
+--     UPDATE reservations SET status = 'CANCELLED' WHERE id = p_reservation_id;
+--
+--     -- Lock and decrement the trip seat count.
+--     SELECT seats_taken INTO v_seats_taken
+--     FROM trips
+--     WHERE id = v_trip_id
+--     FOR UPDATE;
+--
+--     UPDATE trips
+--     SET seats_taken = GREATEST(0, v_seats_taken - 1)
+--     WHERE id = v_trip_id;
+--
+--     -- Promote the next waiting passenger into the freed seat.
+--     SELECT wl.id, wl.passenger_id
+--     INTO v_waiting_id, v_passenger_id
+--     FROM waiting_lists wl
+--     WHERE wl.trip_id = v_trip_id
+--       AND wl.status = 'WAITING'
+--     ORDER BY wl.joined_at ASC, wl.id ASC
+--     LIMIT 1
+--     FOR UPDATE SKIP LOCKED;
+--
+--     IF v_waiting_id IS NOT NULL THEN
+--         -- Insert the promoted reservation (application must generate qr_payload).
+--         INSERT INTO reservations (passenger_id, trip_id, status, qr_payload, created_at)
+--         VALUES (v_passenger_id, v_trip_id, 'CONFIRMED',
+--                 'ANILINK-RES-' || encode(gen_random_bytes(4), 'hex'),
+--                 now())
+--         RETURNING id INTO v_promoted_reservation_id;
+--
+--         -- Count the promoted seat.
+--         UPDATE trips
+--         SET seats_taken = seats_taken + 1
+--         WHERE id = v_trip_id;
+--
+--         -- Confirm the waitlist entry only now that the reservation exists.
+--         UPDATE waiting_lists
+--         SET status = 'CONFIRMED'
+--         WHERE id = v_waiting_id AND status = 'WAITING';
+--
+--         RETURN v_promoted_reservation_id;
+--     END IF;
+--
+--     RETURN NULL;
+-- END;
+-- $$;
+--
+-- ----------------------------------------------------------------------------
+-- (B) Optional unique index: one active reservation per user per trip.
+--     Prevents duplicate active bookings at the database level.
+-- ----------------------------------------------------------------------------
+-- CREATE UNIQUE INDEX IF NOT EXISTS idx_reservations_one_active_per_user_trip
+-- ON reservations (passenger_id, trip_id)
+-- WHERE status IN ('CONFIRMED','VERIFIED','BOARDED');
+--
+-- ----------------------------------------------------------------------------
+-- ROLLBACK NOTES:
+--   Drop the function and index if they were applied:
+--     DROP FUNCTION IF EXISTS anilink.cancel_and_promote(bigint);
+--     DROP INDEX IF EXISTS idx_reservations_one_active_per_user_trip;
+--
+-- SAFETY:
+--   This script performs no DELETEs, no sequence resets, and no primary key
+--   renumbering. Existing reservations, waiting lists, trips, and foreign keys
+--   are preserved. Completed/cancelled trips remain referenced by history.
+-- ============================================================================
