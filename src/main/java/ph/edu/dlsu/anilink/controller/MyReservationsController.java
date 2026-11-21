@@ -509,6 +509,8 @@ public class MyReservationsController {
         public String getReservationCode() { return reservationCode; }
         public String getRoute() { return route; }
         public String getDate() { return date; }
+        // travelDate alias for the DSA sort comparator; same value as getDate().
+        public String getTravelDate() { return date; }
         public String getDepartureTime() { return departureTime; }
         public String getStatus() { return status; }
         public Long getTripId() { return tripId; }
