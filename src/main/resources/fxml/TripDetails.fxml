@@ -12,7 +12,7 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane prefHeight="650.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ph.edu.dlsu.anilink.controller.TripDetailsController">
+<BorderPane prefHeight="650.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ph.edu.dlsu.anilink.controller.TripDetailsController">
     <stylesheets><URL value="@../css/main.css" /></stylesheets>
 
     <top>
@@ -66,7 +66,6 @@
                     </HBox>
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
                         <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 80px;" text="Status:" />
-                        <Label fx:id="statusLabel" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 4 10; -fx-background-radius: 12; -fx-background-color: #E2E8F0; -fx-text-fill: #475569;" text="N/A" />
                   <ChoiceBox fx:id="statusDropdown" prefWidth="150.0" style="-fx-font-size: 12; -fx-font-weight: bold; -fx-background-radius: 12; -fx-background-color: #E2E8F0; -fx-text-fill: #475569;" />
                     </HBox>
                <Label fx:id="messageLabel" style="-fx-font-size: 14px; -fx-text-fill: #64748B;" text="Message" />

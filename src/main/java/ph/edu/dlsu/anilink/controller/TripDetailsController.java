@@ -49,7 +49,6 @@ public class TripDetailsController {
     @FXML private Label routeLabel;
     @FXML private Label scheduleLabel;
     @FXML private Label capacityLabel;
-    @FXML private Label statusLabel;
     @FXML private Label messageLabel;
     @FXML private Button viewPassengersButton;
     @FXML private Button backButton;
@@ -207,7 +206,6 @@ public class TripDetailsController {
                 scheduleLabel.setText(departureTime);
                 capacityLabel.setText(String.format("%d / %d", seatsTaken, capacity));
 
-                updateStatusBadge(status);
                 statusDropdown.setValue(status);
                 updateStatusDropdown(status);
                 viewPassengersButton.setDisable(false);
@@ -226,26 +224,6 @@ public class TripDetailsController {
         });
 
         new Thread(task).start();
-    }
-
-    private void updateStatusBadge(String status) {
-        statusLabel.setText(status.toUpperCase());
-
-        String baseStyle = "-fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 4 10; -fx-background-radius: 12; ";
-        switch (status.toUpperCase()) {
-            case "SCHEDULED":
-                statusLabel.setStyle(baseStyle + "-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8;");
-                break;
-            case "IN_TRANSIT":
-                statusLabel.setStyle(baseStyle + "-fx-background-color: #FEF3C7; -fx-text-fill: #B45309;");
-                break;
-            case "COMPLETED":
-                statusLabel.setStyle(baseStyle + "-fx-background-color: #DCFCE7; -fx-text-fill: #15803D;");
-                break;
-            default:
-                statusLabel.setStyle(baseStyle + "-fx-background-color: #E2E8F0; -fx-text-fill: #475569;");
-                break;
-        }
     }
 
     private void updateStatusDropdown(String status) {
@@ -282,7 +260,6 @@ public class TripDetailsController {
             routeLabel.setText("No active trip");
             scheduleLabel.setText("--");
             capacityLabel.setText("0 / 0");
-            updateStatusBadge("N/A");
             statusDropdown.setValue("N/A");
             viewPassengersButton.setDisable(true);
         });
