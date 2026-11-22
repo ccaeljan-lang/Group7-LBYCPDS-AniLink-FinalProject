@@ -51,7 +51,6 @@ public class TripDetailsController {
     @FXML private Label driverNameLabel;
     @FXML private Label tripIdLabel;
     @FXML private Label routeLabel;
-    @FXML private Label scheduleLabel;
     @FXML private Label capacityLabel;
     @FXML private Label messageLabel;
     @FXML private Button viewPassengersButton;
@@ -271,7 +270,6 @@ public class TripDetailsController {
 
                 tripIdLabel.setText("#" + currentTripId);
                 routeLabel.setText(origin + " ↔ " + destination);
-                scheduleLabel.setText(departureTime);
                 capacityLabel.setText(String.format("%d / %d", seatsTaken, capacity));
 
                 statusDropdown.setValue(status.replace("_", " "));
@@ -324,7 +322,6 @@ public class TripDetailsController {
         Platform.runLater(() -> {
             tripIdLabel.setText("--");
             routeLabel.setText("No active trip");
-            scheduleLabel.setText("--");
             capacityLabel.setText("0 / 0");
             statusDropdown.setValue("N/A");
             viewPassengersButton.setDisable(true);

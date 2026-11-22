@@ -15,7 +15,7 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane prefHeight="750.0" prefWidth="1100.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ph.edu.dlsu.anilink.controller.TripDetailsController">
+<BorderPane prefHeight="750.0" prefWidth="1100.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ph.edu.dlsu.anilink.controller.TripDetailsController">
     <stylesheets><URL value="@../css/main.css" /></stylesheets>
 
     <top>
@@ -64,7 +64,6 @@
                     </HBox>
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
                         <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 80px;" text="Departure:" />
-                        <Label fx:id="scheduleLabel" style="-fx-font-size: 15px; -fx-text-fill: #0d5c36;" text="--" />
                         <ComboBox fx:id="scheduleSelection" prefWidth="150.0" promptText="Choose a time" />
                     </HBox>
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
