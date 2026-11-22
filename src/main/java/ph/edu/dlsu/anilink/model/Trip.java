@@ -31,7 +31,7 @@ public class Trip implements Trackable {
     public static final String SCHEDULED = "SCHEDULED";
     public static final String ARRIVING = "ARRIVING";
     public static final String BOARDING = "BOARDING";
-    public static final String IN_TRANSIT = "IN_TRANSIT";
+    public static final String IN_TRANSIT = "IN TRANSIT";
     public static final String DEPARTED = "DEPARTED";
     public static final String COMPLETED = "COMPLETED";
     public static final String CANCELLED = "CANCELLED";

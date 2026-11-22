@@ -71,7 +71,7 @@ public class TripDetailsController {
         }
 
         // Setup status dropdown items
-        statusDropdown.getItems().addAll("SCHEDULED", "BOARDING", "IN_TRANSIT", "COMPLETED");
+        statusDropdown.getItems().addAll("SCHEDULED", "BOARDING", "IN TRANSIT", "COMPLETED");
         statusDropdown.setValue("N/A");
         messageLabel.setVisible(false);
 
@@ -81,11 +81,12 @@ public class TripDetailsController {
     private void setupListeners() {
         // Setup status dropdown listener
         statusDropdown.valueProperty().addListener((obs, oldVal, newVal) -> {
-            updateStatusDropdown(newVal);
+            String internalStatus = newVal.replace(" ", "_");
+            updateStatusDropdown(internalStatus);
 
             // Update trip status and passengers status
-            supabaseService.updateTripStatus(currentTripId, newVal.toUpperCase());
-            updatePassengersStatus(newVal.toUpperCase());
+            supabaseService.updateTripStatus(currentTripId, internalStatus.toUpperCase());
+            updatePassengersStatus(internalStatus.toUpperCase());
 
             showMessage("Updated status from " + oldVal + " to " + newVal + ".", "#15803D");
         });
@@ -206,7 +207,7 @@ public class TripDetailsController {
                 scheduleLabel.setText(departureTime);
                 capacityLabel.setText(String.format("%d / %d", seatsTaken, capacity));
 
-                statusDropdown.setValue(status);
+                statusDropdown.setValue(status.replace("_", " "));
                 updateStatusDropdown(status);
                 viewPassengersButton.setDisable(false);
 

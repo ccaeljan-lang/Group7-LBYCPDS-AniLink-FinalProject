@@ -51,7 +51,7 @@ public class TripManagementController extends AbstractAdminController {
 
     private final ObservableList<Trip> trips = FXCollections.observableArrayList();
     private final ObservableList<String> statuses = FXCollections.observableArrayList(
-            "SCHEDULED", "ARRIVING", "BOARDING", "IN_TRANSIT", "COMPLETED", "CANCELLED"
+            "SCHEDULED", "ARRIVING", "BOARDING", "IN TRANSIT", "COMPLETED", "CANCELLED"
     );
 
     public TripManagementController(
