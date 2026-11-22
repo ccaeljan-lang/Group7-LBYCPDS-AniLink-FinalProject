@@ -64,7 +64,27 @@ public class ViewNavigator {
             double finalWidth = currentWidth > 0 ? currentWidth : width;
             double finalHeight = currentHeight > 0 ? currentHeight : height;
 
+    public void navigateTo(Event event, String fxmlPath, double width, double height) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            loader.setControllerFactory(applicationContext::getBean);
+            Parent root = loader.load();
+
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+
+            // Preserve the current window size instead of forcing the passed dimensions.
+            double currentWidth = stage.getWidth();
+            double currentHeight = stage.getHeight();
+            double finalWidth = currentWidth > 0 ? currentWidth : width;
+            double finalHeight = currentHeight > 0 ? currentHeight : height;
+
             stage.setScene(new Scene(root, finalWidth, finalHeight));
+            // Explicitly set stage size after setting scene to prevent JavaFX
+            // from resizing to the scene's preferred size (which is determined
+            // by the FXML's prefHeight/prefWidth and may differ from current
+            // window size).
+            stage.setWidth(finalWidth);
+            stage.setHeight(finalHeight);
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
@@ -100,6 +120,11 @@ public class ViewNavigator {
             double finalHeight = currentHeight > 0 ? currentHeight : height;
 
             stage.setScene(new Scene(root, finalWidth, finalHeight));
+            // Explicitly set stage size after setting scene to prevent JavaFX
+            // from resizing to the scene's preferred size (determined by FXML
+            // prefHeight/prefWidth).
+            stage.setWidth(finalWidth);
+            stage.setHeight(finalHeight);
             stage.show();
 
             return loader.getController();
