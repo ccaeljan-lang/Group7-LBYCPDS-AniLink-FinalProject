@@ -212,19 +212,21 @@ public class Trip implements Trackable {
 
     @Override
     public String toString() {
-        // FIXED: Uses getOrigin() and getDestination() instead of getRouteName()
         String routeInfo = (route != null)
                 ? route.getOrigin() + " ↔ " + route.getDestination()
                 : "Unknown Route";
 
-        String timeInfo = (schedule != null && schedule.getDepartureTime() != null)
-                ? schedule.getDepartureTime().toString()
-                : "TBD";
+        String departureInfo = (schedule != null && schedule.getDepartureDate() != null)
+                ? schedule.getDepartureDate().toString() + " " +
+                  (schedule.getDepartureTime() != null
+                          ? schedule.getDepartureTime().toString()
+                          : "")
+                : "No date/time";
 
         return String.format("TRIP #%d | %s | %s | %s | Seats: %d/%d | [%s]",
                 tripId != null ? tripId : 0,
                 routeInfo,
-                timeInfo,
+                departureInfo,
                 vehicleType != null ? vehicleType : "N/A",
                 seatsTaken,
                 capacity,
