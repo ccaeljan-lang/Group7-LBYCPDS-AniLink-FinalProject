@@ -682,6 +682,10 @@ public class SupabaseService {
     }
 
     public String getTripsByRouteAndDate(Long routeId, String dateStr) {
+        // If no date is selected, return empty (no schedules to show)
+        if (dateStr == null || dateStr.isBlank()) {
+            return "[]";
+        }
         return restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/trips")
