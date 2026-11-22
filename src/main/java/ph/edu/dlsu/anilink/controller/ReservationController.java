@@ -206,7 +206,20 @@ public class ReservationController {
                             }
 
                             long id = trip.path("id").asLong();
-                            String time = trip.path("schedule").path("departure_time").asText("Unknown Time");
+                            JsonNode tripSchedule = trip.path("schedule");
+                            String time = tripSchedule.path("departure_time").asText(null);
+                            String schedDate = tripSchedule.path("departure_date").asText(null);
+
+                            // Skip schedules without a departure time
+                            if (time == null || time.isEmpty()) {
+                                continue;
+                            }
+
+                            // Skip schedules that don't match the selected date
+                            if (dateStr != null && !dateStr.equals(schedDate)) {
+                                continue;
+                            }
+
                             int capacity = trip.path("capacity").asInt(0);
                             int seatsTaken = trip.path("seats_taken").asInt(0);
 

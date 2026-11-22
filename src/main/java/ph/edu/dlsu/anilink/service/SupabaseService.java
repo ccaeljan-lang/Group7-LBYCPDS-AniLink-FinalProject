@@ -691,6 +691,7 @@ public class SupabaseService {
                         .path("/trips")
                         .queryParam("route_id", "eq." + routeId)
                         .queryParam("schedule.departure_date", "eq." + dateStr)
+                        .queryParam("schedule.departure_date", "not.is.null")
                         .queryParam("select", "*,schedule:departure_schedules(*)")
                         .build())
                 .retrieve()
