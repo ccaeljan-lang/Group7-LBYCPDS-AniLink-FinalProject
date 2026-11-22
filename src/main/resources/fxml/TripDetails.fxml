@@ -11,6 +11,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.ScrollPane?>
 
 <BorderPane prefHeight="650.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ph.edu.dlsu.anilink.controller.TripDetailsController">
     <stylesheets><URL value="@../css/main.css" /></stylesheets>
@@ -79,6 +80,7 @@
                 </HBox>
             </VBox>
         </VBox>
-        </ScrollPane>
+        </VBox>
+</ScrollPane>
     </center>
 </BorderPane>

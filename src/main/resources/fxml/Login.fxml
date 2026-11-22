@@ -1,5 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
@@ -9,67 +7,97 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.ScrollPane?>
 <?import java.net.URL?>
 
-<HBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ph.edu.dlsu.anilink.controller.LoginController"
+<HBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="ph.edu.dlsu.anilink.controller.LoginController"
       prefWidth="900" prefHeight="600">
 
     <stylesheets>
         <URL value="@../css/main.css" />
     </stylesheets>
 
-    <VBox prefWidth="450" alignment="CENTER" style="-fx-background-color: #E0E0E0;">
-        <ImageView fitWidth="450" fitHeight="600" preserveRatio="false">
+    <!-- Left Side: Bus Image -->
+    <VBox prefWidth="450" alignment="CENTER"
+          style="-fx-background-color: #E0E0E0;">
+        <ImageView fitWidth="450" fitHeight="600"
+                   preserveRatio="false">
             <image>
                 <Image url="@../images/bus.png" />
             </image>
         </ImageView>
     </VBox>
 
-    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent;">
-<VBox alignment="CENTER" spacing="15" prefWidth="450">
-        <padding>
-            <Insets top="40" right="40" bottom="40" left="40"/>
-        </padding>
+    <!-- Right Side: Login Form -->
+    <ScrollPane fitToWidth="true"
+                hbarPolicy="NEVER"
+                vbarPolicy="AS_NEEDED"
+                style="-fx-background-color: transparent;"
+                prefWidth="450">
 
-        <ImageView fitWidth="280" preserveRatio="true">
-            <image>
-                <Image url="@../images/title.png" />
-            </image>
-            <VBox.margin>
-                <Insets bottom="20"/>
-            </VBox.margin>
-        </ImageView>
+        <content>
+            <VBox alignment="CENTER" spacing="15" prefWidth="450">
+                <padding>
+                    <Insets top="40" right="40" bottom="40" left="40"/>
+                </padding>
 
-        <VBox alignment="CENTER_LEFT" maxWidth="350">
-            <Label text="Login" styleClass="header-label">
-                <VBox.margin>
-                    <Insets bottom="15"/>
-                </VBox.margin>
-            </Label>
-        </VBox>
-</ScrollPane>
+                <ImageView fitWidth="280" preserveRatio="true">
+                    <image>
+                        <Image url="@../images/title.png" />
+                    </image>
+                    <VBox.margin>
+                        <Insets bottom="20"/>
+                    </VBox.margin>
+                </ImageView>
 
-        <VBox alignment="CENTER_LEFT" maxWidth="350" spacing="5">
-            <Label text="Email / ID Number"/>
-            <TextField fx:id="emailField" promptText="firstname_lastname@dlsu.edu.ph" prefWidth="350" maxWidth="350"/>
-        </VBox>
+                <VBox alignment="CENTER_LEFT" maxWidth="350">
+                    <Label text="Login" styleClass="header-label">
+                        <VBox.margin>
+                            <Insets bottom="15"/>
+                        </VBox.margin>
+                    </Label>
+                </VBox>
 
-        <VBox alignment="CENTER_LEFT" maxWidth="350" spacing="5">
-            <Label text="Password"/>
-            <PasswordField fx:id="passwordField" promptText="Password" prefWidth="350" maxWidth="350"/>
-        </VBox>
+                <VBox alignment="CENTER_LEFT" maxWidth="350" spacing="5">
+                    <Label text="Email / ID Number"/>
+                    <TextField fx:id="emailField"
+                               promptText="firstname_lastname@dlsu.edu.ph"
+                               prefWidth="350" maxWidth="350"/>
+                </VBox>
 
-        <Button fx:id="loginButton" text="Login" onAction="#handleLogin" prefWidth="350" maxWidth="350" styleClass="primary-button">
-            <VBox.margin>
-                <Insets top="15"/>
-            </VBox.margin>
-        </Button>
+                <VBox alignment="CENTER_LEFT" maxWidth="350" spacing="5">
+                    <Label text="Password"/>
+                    <PasswordField fx:id="passwordField"
+                                   promptText="Password"
+                                   prefWidth="350" maxWidth="350"/>
+                </VBox>
 
-        <Button text="Exit" prefWidth="350" maxWidth="350" styleClass="secondary-button"/>
+                <Button fx:id="loginButton"
+                        text="Login"
+                        onAction="#handleLogin"
+                        prefWidth="350" maxWidth="350"
+                        styleClass="primary-button">
+                    <VBox.margin>
+                        <Insets top="15"/>
+                    </VBox.margin>
+                </Button>
 
-        <Button text="Don't have an account? Sign Up" onAction="#handleGoToRegister" prefWidth="350" maxWidth="350" styleClass="secondary-button"/>
+                <Button text="Exit"
+                        prefWidth="350" maxWidth="350"
+                        styleClass="secondary-button"/>
 
-        <Label fx:id="messageLabel" wrapText="true" textFill="red"/>
-    </VBox>
+                <Button text="Don't have an account? Sign Up"
+                        onAction="#handleGoToRegister"
+                        prefWidth="350" maxWidth="350"
+                        styleClass="secondary-button"/>
+
+                <Label fx:id="messageLabel"
+                       wrapText="true" textFill="red"/>
+
+            </VBox>
+        </content>
+    </ScrollPane>
+
 </HBox>

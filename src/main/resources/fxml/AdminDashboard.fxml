@@ -11,39 +11,27 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.ScrollPane?>
 
-<BorderPane prefHeight="650.0"
-            prefWidth="1000.0"
-            xmlns="http://javafx.com/javafx/21"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="ph.edu.dlsu.anilink.controller.AdminDashboardController">
+<BorderPane prefHeight="700.0" prefWidth="1100.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ph.edu.dlsu.anilink.controller.AdminDashboardController">
 
     <stylesheets>
         <URL value="@../css/main.css" />
     </stylesheets>
 
     <top>
-        <HBox alignment="CENTER_LEFT"
-              prefHeight="60.0"
-              spacing="20.0"
-              style="-fx-background-color: #0d5c36; -fx-padding: 10 25;"
-              styleClass="top-nav">
+        <HBox alignment="CENTER_LEFT" prefHeight="60.0" spacing="20.0" style="-fx-background-color: #0d5c36; -fx-padding: 10 25;" styleClass="top-nav">
             <ImageView fitHeight="28.0" preserveRatio="true">
-                <image>
-                    <Image url="@../images/nologotitle.png" />
-                </image>
+                <Image url="@../images/nologotitle.png" />
             </ImageView>
             <Region HBox.hgrow="ALWAYS" />
-            <Label style="-fx-text-fill: #F8FAFC; -fx-font-size: 14px; -fx-font-weight: bold;" text="Welcome, Admin" />
+            <Label fx:id="adminNameLabel" style="-fx-text-fill: #F8FAFC; -fx-font-size: 14px; -fx-font-weight: bold;" text="Welcome, Admin" />
             <Label style="-fx-text-fill: #94A3B8; -fx-font-size: 18px;" text="⚙️" />
         </HBox>
     </top>
 
     <left>
-        <VBox prefWidth="220.0"
-              spacing="8.0"
-              style="-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-width: 0 1 0 0;"
-              styleClass="sidebar-white">
+        <VBox prefWidth="220.0" spacing="8.0" style="-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-width: 0 1 0 0;" styleClass="sidebar-white">
             <padding>
                 <Insets bottom="20.0" left="15.0" right="15.0" top="20.0" />
             </padding>
@@ -54,64 +42,49 @@
 
             <Region VBox.vgrow="ALWAYS" />
 
-            <Button onAction="#handleLogout"
-                    prefHeight="40.0"
-                    prefWidth="190.0"
-                    style="-fx-background-color: #FEF2F2; -fx-text-fill: #DC2626; -fx-border-color: #FECACA; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-font-weight: bold; -fx-cursor: hand;"
-                    styleClass="sidebar-btn"
-                    text="Logout" />
+            <Button onAction="#handleLogout" prefHeight="40.0" prefWidth="190.0" style="-fx-background-color: #FEF2F2; -fx-text-fill: #DC2626; -fx-border-color: #FECACA; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-font-weight: bold; -fx-cursor: hand;" styleClass="sidebar-btn" text="Logout" />
         </VBox>
     </left>
+
     <center>
         <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
             <VBox alignment="TOP_CENTER" spacing="20.0" style="-fx-background-color: #F8FAFC;">
-<VBox alignment="TOP_CENTER" spacing="25.0" style="-fx-background-color: #F8FAFC;">
-            <padding>
-                <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
-            </padding>
+                <padding>
+                    <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
+                </padding>
 
-            <VBox alignment="CENTER" spacing="5.0">
-                <Label style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #0F172A;" styleClass="section-title" text="Admin Dashboard" />
-                <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B;" text="Real-time system metrics, capacity analytics, and trip statistics" />
+                <VBox alignment="CENTER" spacing="5.0">
+                    <Label style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #0F172A;" styleClass="section-title" text="Admin Dashboard" />
+                    <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B;" text="Real-time system metrics, capacity analytics, and trip statistics" />
+                </VBox>
+
+                <GridPane alignment="CENTER" hgap="20.0" vgap="20.0">
+                    <VBox alignment="CENTER" prefHeight="130.0" prefWidth="230.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 6, 0, 0, 2);" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Label style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #64748B;" text="TOTAL USERS" />
+                        <Label fx:id="totalUsers" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #15803D;" text="--" />
+                    </VBox>
+
+                    <VBox alignment="CENTER" prefHeight="130.0" prefWidth="230.0" spacing="8.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 6, 0, 0, 2);" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                        <Label style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #64748B;" text="TODAY'S TRIPS" />
+                        <Label fx:id="todaysTrips" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;" text="--" />
+                    </VBox>
+
+                    <VBox alignment="CENTER" prefHeight="130.0" prefWidth="230.0" spacing="8.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 6, 0, 0, 2);" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                        <Label style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #64748B;" text="AVAILABLE SEATS" />
+                        <Label fx:id="availableSeats" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #16A34A;" text="--" />
+                    </VBox>
+
+                    <VBox alignment="CENTER" prefHeight="130.0" prefWidth="230.0" spacing="8.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 6, 0, 0, 2);" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                        <Label style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #64748B;" text="ACTIVE TRIPS" />
+                        <Label fx:id="activeTrips" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #16A34A;" text="--" />
+                    </VBox>
+
+                    <VBox alignment="CENTER" prefHeight="130.0" prefWidth="230.0" spacing="8.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 6, 0, 0, 2);" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                        <Label style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #64748B;" text="RESERVATIONS" />
+                        <Label fx:id="reservations" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;" text="--" />
+                    </VBox>
+                </GridPane>
             </VBox>
-
-            <GridPane alignment="CENTER" hgap="20.0" vgap="20.0">
-                <VBox alignment="CENTER" prefHeight="130.0" prefWidth="230.0" spacing="8.0"
-                      style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 6, 0, 0, 2);"
-                      GridPane.columnIndex="0" GridPane.rowIndex="0">
-                    <Label style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #64748B;" text="TOTAL USERS" />
-                    <Label fx:id="totalUsers" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;" text="--" />
-                </VBox>
-
-                <VBox alignment="CENTER" prefHeight="130.0" prefWidth="230.0" spacing="8.0"
-                      style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 6, 0, 0, 2);"
-                      GridPane.columnIndex="1" GridPane.rowIndex="0">
-                    <Label style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #64748B;" text="TODAY'S TRIPS" />
-                    <Label fx:id="todaysTrips" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #0F172A;" text="--" />
-                </VBox>
-
-                <VBox alignment="CENTER" prefHeight="130.0" prefWidth="230.0" spacing="8.0"
-                      style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 6, 0, 0, 2);"
-                      GridPane.columnIndex="2" GridPane.rowIndex="0">
-                    <Label style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #64748B;" text="AVAILABLE SEATS" />
-                    <Label fx:id="availableSeats" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #16A34A;" text="--" />
-                </VBox>
-
-                <VBox alignment="CENTER" prefHeight="130.0" prefWidth="230.0" spacing="8.0"
-                      style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 6, 0, 0, 2);"
-                      GridPane.columnIndex="0" GridPane.rowIndex="1">
-                    <Label style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #64748B;" text="ACTIVE TRIPS" />
-                    <Label fx:id="activeTrips" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #D97706;" text="--" />
-                </VBox>
-
-                <VBox alignment="CENTER" prefHeight="130.0" prefWidth="230.0" spacing="8.0"
-                      style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 6, 0, 0, 2);"
-                      GridPane.columnIndex="1" GridPane.rowIndex="1">
-                    <Label style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #64748B;" text="RESERVATIONS" />
-                    <Label fx:id="reservations" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;" text="--" />
-                </VBox>
-            </GridPane>
-        </VBox>
         </ScrollPane>
     </center>
 </BorderPane>

@@ -11,6 +11,7 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
+<?import javafx.scene.control.ScrollPane?>
 <BorderPane prefHeight="650.0"
             prefWidth="1000.0"
             xmlns="http://javafx.com/javafx/21"
@@ -64,7 +65,7 @@
 
     <center>
         <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
-            <VBox alignment="TOP_CENTER" spacing="20.0" style="-fx-background-color: #F8FAFC;">
+            <VBox alignment="TOP_CENTER" spacing="20.0" style="-fx-background-color: #F8FAFC;"/>
 <VBox alignment="TOP_CENTER" spacing="25.0" style="-fx-background-color: #F8FAFC;">
             <padding>
                 <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
@@ -114,6 +115,7 @@
                 </HBox>
             </VBox>
         </VBox>
-        </ScrollPane>
+        </VBox>
+</ScrollPane>
     </center>
 </BorderPane>

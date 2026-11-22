@@ -12,6 +12,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.ScrollPane?>
 
 <BorderPane prefHeight="750.0"
             prefWidth="1150.0"
@@ -149,6 +150,7 @@
                 </VBox>
             </VBox>
         </VBox>
-        </ScrollPane>
+        </VBox>
+</ScrollPane>
     </center>
 </BorderPane>
