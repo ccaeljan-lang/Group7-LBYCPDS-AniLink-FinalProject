@@ -404,6 +404,7 @@ public class SupabaseService {
                     .uri(uriBuilder -> uriBuilder
                             .path("/departure_schedules")
                             .queryParam("route_id", "eq." + routeId)
+                            .queryParam("departure_date", "eq." + departureDate)
                             .queryParam("departure_time", "eq." + departureTime)
                             .queryParam("select", "id")
                             .build())
@@ -433,15 +434,44 @@ public class SupabaseService {
 
     public String createSchedule(Long routeId, String departureDate,
                                  String departureTime, int capacity) {
+        return createSchedule(routeId, departureDate, departureTime, capacity,
+                false, null);
+    }
+
+    public String createSchedule(Long routeId, String departureDate,
+                                 String departureTime, int capacity,
+                                 boolean isRecurring, String recurrenceGroupId) {
+        java.util.Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("route_id", routeId);
+        body.put("departure_date", departureDate);
+        body.put("departure_time", departureTime);
+        body.put("capacity", capacity);
+        body.put("is_recurring", isRecurring);
+        if (recurrenceGroupId != null) {
+            body.put("recurrence_group_id", recurrenceGroupId);
+        }
+
         return restClient.post()
                 .uri("/departure_schedules")
                 .header("Prefer", "return=representation")
-                .body(java.util.Map.of(
-                        "route_id", routeId,
-                        "departure_date", departureDate,
-                        "departure_time", departureTime,
-                        "capacity", capacity
-                ))
+                .body(body)
+                .retrieve()
+                .body(String.class);
+    }
+
+    /**
+     * Fetch all schedules belonging to the same repeating group.
+     *
+     * @param groupId the recurrence group id
+     * @return JSON array of schedules in that group
+     */
+    public String getSchedulesByRecurrenceGroup(String groupId) {
+        return restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/departure_schedules")
+                        .queryParam("recurrence_group_id", "eq." + groupId)
+                        .queryParam("select", "*,route:routes(*)")
+                        .build())
                 .retrieve()
                 .body(String.class);
     }
@@ -508,6 +538,19 @@ public class SupabaseService {
     public String getActiveReservationsByPassenger(Long passengerId) {
         return restClient.get()
                 .uri("/reservations?passenger_id=eq." + passengerId + "&status=neq.CANCELLED&status=neq.COMPLETED")
+                .retrieve()
+                .body(String.class);
+    }
+
+    /**
+     * Fetch active (non-cancelled, non-completed) reservations for a passenger,
+     * including nested trip and schedule details so departure dates can be read.
+     */
+    public String getActiveReservationsWithTripDetails(Long passengerId) {
+        return restClient.get()
+                .uri("/reservations?passenger_id=eq." + passengerId +
+                        "&status=neq.CANCELLED&status=neq.COMPLETED" +
+                        "&select=*,trip:trips(*,schedule:departure_schedules(*))")
                 .retrieve()
                 .body(String.class);
     }

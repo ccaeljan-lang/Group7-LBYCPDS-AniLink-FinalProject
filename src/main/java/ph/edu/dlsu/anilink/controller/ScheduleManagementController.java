@@ -1,7 +1,7 @@
 package ph.edu.dlsu.anilink.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -23,20 +23,15 @@ import ph.edu.dlsu.anilink.util.ViewNavigator;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
-/**
- * Schedule Management Controller
- *
- * Handles departure schedule creation, schedule selection dropdowns,
- * route filtering, and chronological sorting using Bubble Sort.
- *
- * Existing Supabase and navigation features are retained.
- */
 @Controller
 public class ScheduleManagementController extends AbstractAdminController {
 
@@ -47,23 +42,21 @@ public class ScheduleManagementController extends AbstractAdminController {
     @FXML private TextField capacityField;
     @FXML private ListView<DepartureSchedule> scheduleListView;
     @FXML private Label statusLabel;
-    // Create Schedule button (disabled while a request is in flight).
     @FXML private Button createScheduleButton;
-    // Date picker for choosing the travel date.
     @FXML private DatePicker departureDatePicker;
+    @FXML private CheckBox repeatWeekCheckBox;
 
-    // Shared schedule collection for list and dropdown.
     private final ObservableList<DepartureSchedule> schedules =
             FXCollections.observableArrayList();
-    // Prevent outdated requests from replacing current results.
+
     private long latestScheduleRequest = 0;
-    // Prevent rapid repeat schedule-creation submissions.
     private boolean creatingSchedule = false;
 
     public ScheduleManagementController(
             SupabaseService supabaseService,
             UserSession userSession,
             ViewNavigator viewNavigator) {
+
         super(supabaseService, userSession, viewNavigator);
     }
 
@@ -83,7 +76,6 @@ public class ScheduleManagementController extends AbstractAdminController {
 
         setupDepartureTimeDropdown();
 
-        // Synchronize ListView and ComboBox selection.
         scheduleListView.getSelectionModel()
                 .selectedItemProperty()
                 .addListener((observable, oldValue, selected) -> {
@@ -101,16 +93,12 @@ public class ScheduleManagementController extends AbstractAdminController {
                     }
                 });
 
-        // EXISTING: Load routes and schedules from Supabase.
         loadRoutesAsync();
         loadSchedulesAsync();
     }
 
     /**
      * Generate departure times every 30 minutes.
-     *
-     * Administrators can choose a predefined time
-     * or enter a custom time using HH:mm.
      */
     private void setupDepartureTimeDropdown() {
 
@@ -165,6 +153,7 @@ public class ScheduleManagementController extends AbstractAdminController {
                 super.updateItem(item, empty);
 
                 if (empty || item == null) {
+
                     setText(null);
 
                 } else {
@@ -255,7 +244,7 @@ public class ScheduleManagementController extends AbstractAdminController {
 
         task.setOnFailed(e -> {
 
-            e.getSource().getException().printStackTrace();
+            task.getException().printStackTrace();
 
             showAlert(
                     Alert.AlertType.ERROR,
@@ -307,7 +296,6 @@ public class ScheduleManagementController extends AbstractAdminController {
                                 new TypeReference<List<DepartureSchedule>>() {}
                         );
 
-                // Apply Bubble Sort (earliest to latest).
                 return ScheduleBubbleSort.byDepartureTime(
                         loadedSchedules
                 );
@@ -333,7 +321,7 @@ public class ScheduleManagementController extends AbstractAdminController {
 
             if (requestId == latestScheduleRequest) {
 
-                e.getSource().getException().printStackTrace();
+                task.getException().printStackTrace();
 
                 showAlert(
                         Alert.AlertType.ERROR,
@@ -369,10 +357,9 @@ public class ScheduleManagementController extends AbstractAdminController {
 
         Route route = routeComboBox.getValue();
 
-        LocalDate departureDate = null;
-        if (departureDatePicker != null) {
-            departureDate = departureDatePicker.getValue();
-        }
+        // FIX: Assign the date only once so it is effectively final.
+        final LocalDate departureDate =
+                departureDatePicker.getValue();
 
         String departureTimeText =
                 departureTimeComboBox.getEditor()
@@ -407,7 +394,6 @@ public class ScheduleManagementController extends AbstractAdminController {
             return;
         }
 
-        // Prevent rapid repeat submissions while a request is in flight.
         if (creatingSchedule) {
 
             showInlineStatus(
@@ -433,8 +419,6 @@ public class ScheduleManagementController extends AbstractAdminController {
                     DateTimeFormatter.ofPattern("HH:mm:ss")
             );
 
-            String dbFormattedDate = departureDate.toString();
-
             int capacity = Integer.parseInt(capacityText);
 
             if (capacity <= 0) {
@@ -448,13 +432,20 @@ public class ScheduleManagementController extends AbstractAdminController {
                 return;
             }
 
+            boolean repeatWeek =
+                    repeatWeekCheckBox != null
+                            && repeatWeekCheckBox.isSelected();
+
             showInlineStatus(
                     statusLabel,
-                    "Adding schedule...",
+                    repeatWeek
+                            ? "Creating weekly schedules..."
+                            : "Adding schedule...",
                     "#0284C7"
             );
 
             creatingSchedule = true;
+
             if (createScheduleButton != null) {
                 createScheduleButton.setDisable(true);
             }
@@ -464,31 +455,97 @@ public class ScheduleManagementController extends AbstractAdminController {
                 @Override
                 protected String call() throws Exception {
 
-                    // Check Supabase BEFORE inserting to prevent duplicates.
-                    // Same route_id + departure_date + departure_time
-                    // must not exist twice.
-                    if (supabaseService.scheduleExists(
-                            route.getRouteId(),
-                            dbFormattedDate,
-                            dbFormattedTime)) {
-                        return "DUPLICATE";
+                    if (repeatWeek) {
+
+                        String groupId = UUID.randomUUID().toString();
+
+                        LocalDate monday = departureDate
+                                .with(TemporalAdjusters.previousOrSame(
+                                        DayOfWeek.MONDAY
+                                ));
+
+                        int created = 0;
+                        int skipped = 0;
+
+                        java.util.List<String> skippedDates =
+                                new java.util.ArrayList<>();
+
+                        for (int day = 0; day < 6; day++) {
+
+                            LocalDate currentDate =
+                                    monday.plusDays(day);
+
+                            String currentDateStr =
+                                    currentDate.toString();
+
+                            if (supabaseService.scheduleExists(
+                                    route.getRouteId(),
+                                    currentDateStr,
+                                    dbFormattedTime)) {
+
+                                skipped++;
+
+                                skippedDates.add(currentDateStr);
+
+                                continue;
+                            }
+
+                            supabaseService.createSchedule(
+                                    route.getRouteId(),
+                                    currentDateStr,
+                                    dbFormattedTime,
+                                    capacity,
+                                    true,
+                                    groupId
+                            );
+
+                            created++;
+                        }
+
+                        if (created == 0) {
+
+                            return "DUPLICATE_ALL";
+
+                        } else if (skipped > 0) {
+
+                            return "PARTIAL:"
+                                    + created + ":"
+                                    + skipped + ":"
+                                    + String.join(",", skippedDates);
+                        }
+
+                        return "SUCCESS:" + created + ":" + groupId;
+
+                    } else {
+
+                        String dbFormattedDate =
+                                departureDate.toString();
+
+                        if (supabaseService.scheduleExists(
+                                route.getRouteId(),
+                                dbFormattedDate,
+                                dbFormattedTime)) {
+
+                            return "DUPLICATE";
+                        }
+
+                        supabaseService.createSchedule(
+                                route.getRouteId(),
+                                dbFormattedDate,
+                                dbFormattedTime,
+                                capacity
+                        );
+
+                        return "SUCCESS:1:"
+                                + departureDate.toString();
                     }
-
-                    // EXISTING: Save the schedule to Supabase.
-                    supabaseService.createSchedule(
-                            route.getRouteId(),
-                            dbFormattedDate,
-                            dbFormattedTime,
-                            capacity
-                    );
-
-                    return "SUCCESS";
                 }
             };
 
             task.setOnSucceeded(e -> {
 
                 creatingSchedule = false;
+
                 if (createScheduleButton != null) {
                     createScheduleButton.setDisable(false);
                 }
@@ -507,11 +564,116 @@ public class ScheduleManagementController extends AbstractAdminController {
                             Alert.AlertType.WARNING,
                             "Duplicate Schedule",
                             "A departure schedule for this route on "
-                                    + dbFormattedDate
+                                    + departureDate
                                     + " at " + dbFormattedTime
                                     + " already exists. "
                                     + "Please choose a different date, time, or route."
                     );
+
+                    return;
+                }
+
+                if ("DUPLICATE_ALL".equals(outcome)) {
+
+                    showInlineStatus(
+                            statusLabel,
+                            "All weekdays already have this schedule.",
+                            "#DC2626"
+                    );
+
+                    showAlert(
+                            Alert.AlertType.WARNING,
+                            "Duplicate Schedule",
+                            "Every day Monday–Saturday already has a schedule for this route "
+                                    + "at " + dbFormattedTime + "."
+                    );
+
+                    return;
+                }
+
+                if (outcome != null
+                        && outcome.startsWith("PARTIAL:")) {
+
+                    String[] parts = outcome.split(":");
+
+                    int created = Integer.parseInt(parts[1]);
+                    int skipped = Integer.parseInt(parts[2]);
+
+                    String skippedDates =
+                            parts.length > 3 ? parts[3] : "";
+
+                    showInlineStatus(
+                            statusLabel,
+                            "Created " + created
+                                    + " of 6 weekly schedules ("
+                                    + skipped + " already existed).",
+                            "#16A34A"
+                    );
+
+                    showAlert(
+                            Alert.AlertType.INFORMATION,
+                            "Weekly Schedule Created (Partial)",
+                            "Created " + created
+                                    + " schedule(s) for this route at "
+                                    + dbFormattedTime + ".\n"
+                                    + skipped
+                                    + " day(s) already had a schedule and were skipped.\n"
+                                    + (skippedDates.isEmpty()
+                                    ? ""
+                                    : "Skipped dates: " + skippedDates)
+                    );
+
+                    clearFields();
+                    loadSchedulesAsync();
+
+                    return;
+                }
+
+                if (outcome != null
+                        && outcome.startsWith("SUCCESS:")) {
+
+                    String[] parts = outcome.split(":");
+
+                    int created = Integer.parseInt(parts[1]);
+
+                    if (repeatWeek) {
+
+                        showInlineStatus(
+                                statusLabel,
+                                "Created " + created
+                                        + " weekly schedules (Mon–Sat).",
+                                "#16A34A"
+                        );
+
+                        showAlert(
+                                Alert.AlertType.INFORMATION,
+                                "Weekly Schedule Created",
+                                "Created " + created
+                                        + " departure schedule(s) for this route at "
+                                        + dbFormattedTime
+                                        + ", Monday through Saturday."
+                        );
+
+                    } else {
+
+                        showInlineStatus(
+                                statusLabel,
+                                "Schedule created successfully!",
+                                "#16A34A"
+                        );
+
+                        showAlert(
+                                Alert.AlertType.INFORMATION,
+                                "Schedule Created",
+                                "A departure schedule for this route on "
+                                        + departureDate
+                                        + " at " + dbFormattedTime
+                                        + " has been created."
+                        );
+                    }
+
+                    clearFields();
+                    loadSchedulesAsync();
 
                     return;
                 }
@@ -523,21 +685,23 @@ public class ScheduleManagementController extends AbstractAdminController {
                 );
 
                 clearFields();
-
-                // Reload and Bubble Sort after creation.
                 loadSchedulesAsync();
             });
 
             task.setOnFailed(e -> {
 
                 creatingSchedule = false;
+
                 if (createScheduleButton != null) {
                     createScheduleButton.setDisable(false);
                 }
 
-                Throwable error = e.getSource().getException();
+                // FIX: Retrieve the exception directly from the Task.
+                Throwable error = task.getException();
 
-                error.printStackTrace();
+                if (error != null) {
+                    error.printStackTrace();
+                }
 
                 showInlineStatus(
                         statusLabel,
@@ -549,7 +713,9 @@ public class ScheduleManagementController extends AbstractAdminController {
                         Alert.AlertType.ERROR,
                         "Database Error",
                         "Supabase rejected the request. Reason:\n"
-                                + error.getMessage()
+                                + (error != null
+                                ? error.getMessage()
+                                : "Unknown error")
                 );
             });
 
@@ -573,7 +739,7 @@ public class ScheduleManagementController extends AbstractAdminController {
                     statusLabel,
                     "Use 24h time format (e.g., 08:30 or 14:00).",
                     "#DC2626"
-                    );
+            );
         }
     }
 
@@ -638,13 +804,17 @@ public class ScheduleManagementController extends AbstractAdminController {
                         "#16A34A"
                 );
 
-                // Refresh sorted schedules after deletion.
                 loadSchedulesAsync();
             });
 
             task.setOnFailed(e -> {
 
-                e.getSource().getException().printStackTrace();
+                // FIX: Retrieve the exception directly from the Task.
+                Throwable error = task.getException();
+
+                if (error != null) {
+                    error.printStackTrace();
+                }
 
                 showAlert(
                         Alert.AlertType.ERROR,
@@ -662,11 +832,16 @@ public class ScheduleManagementController extends AbstractAdminController {
         }
     }
 
-    // Clear entered values after schedule creation.
-    // Keep the route selected for consecutive schedule creation.
+    /**
+     * Clear entered values after schedule creation.
+     * Keep the route selected for consecutive schedule creation.
+     */
     private void clearFields() {
 
-        departureDatePicker.setValue(null);
+        if (departureDatePicker != null) {
+            departureDatePicker.setValue(null);
+        }
+
         departureTimeComboBox.setValue(null);
         departureTimeComboBox.getEditor().clear();
 

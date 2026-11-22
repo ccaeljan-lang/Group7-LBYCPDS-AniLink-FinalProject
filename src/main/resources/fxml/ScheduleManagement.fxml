@@ -9,6 +9,7 @@
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
@@ -175,6 +176,13 @@
                                             prefWidth="300.0"
                                             promptText="Pick a travel date"
                                             style="-fx-background-radius: 6px; -fx-border-color: #CBD5E1; -fx-border-radius: 6px;" />
+
+                                <CheckBox fx:id="repeatWeekCheckBox"
+                                          prefHeight="40.0"
+                                          prefWidth="300.0"
+                                          text="Repeat every day this week (Mon–Sat)"
+                                          style="-fx-text-fill: #475569; -fx-font-size: 13px;" />
+
                             </VBox>
 
                             <!-- Shuttle Capacity -->

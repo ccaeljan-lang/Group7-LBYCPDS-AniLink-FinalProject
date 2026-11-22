@@ -18,6 +18,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import org.springframework.stereotype.Controller;
 import ph.edu.dlsu.anilink.dsa.ScheduleBinarySearch;
+import ph.edu.dlsu.anilink.model.DepartureSchedule;
 import ph.edu.dlsu.anilink.model.Reservation;
 import ph.edu.dlsu.anilink.model.Route;
 import ph.edu.dlsu.anilink.model.Trip;
@@ -270,9 +271,15 @@ public class ReservationController {
         // Construct Trip object WITH Route attached
         Trip currentTrip = new Trip();
         currentTrip.setTripId(selectedTripId);
-        currentTrip.setRoute(selectedRoute); // <--- THIS FIXES THE VALIDATION ERROR
+        currentTrip.setRoute(selectedRoute);
         currentTrip.setCapacity(currentCapacity);
         currentTrip.setSeatsTaken(currentSeatsTaken);
+
+        // Attach the selected departure date so booking validation rules
+        // (e.g., date-conflict) can read the trip's departure date.
+        DepartureSchedule schedule = new DepartureSchedule();
+        schedule.setDepartureDate(date);
+        currentTrip.setSchedule(schedule);
 
         System.out.println("DEBUG [Reservation] tripId=" + selectedTripId +
                 ", capacity=" + currentCapacity +

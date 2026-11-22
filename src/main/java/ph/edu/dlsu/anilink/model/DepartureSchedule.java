@@ -44,6 +44,12 @@ public class DepartureSchedule {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate departureDate;
 
+    @JsonProperty("is_recurring")
+    private boolean isRecurring;
+
+    @JsonProperty("recurrence_group_id")
+    private String recurrenceGroupId;
+
     public DepartureSchedule() {
     }
 
@@ -53,6 +59,18 @@ public class DepartureSchedule {
         this.route = route;
         this.departureTime = departureTime;
         this.capacity = capacity;
+    }
+
+    public DepartureSchedule(Long scheduleId, Route route,
+                             LocalTime departureTime, LocalDate departureDate,
+                             int capacity, boolean isRecurring, String recurrenceGroupId) {
+        this.scheduleId = scheduleId;
+        this.route = route;
+        this.departureTime = departureTime;
+        this.departureDate = departureDate;
+        this.capacity = capacity;
+        this.isRecurring = isRecurring;
+        this.recurrenceGroupId = recurrenceGroupId;
     }
 
     public Long getScheduleId() {
@@ -87,6 +105,22 @@ public class DepartureSchedule {
         this.departureDate = departureDate;
     }
 
+    public boolean isRecurring() {
+        return isRecurring;
+    }
+
+    public void setRecurring(boolean recurring) {
+        isRecurring = recurring;
+    }
+
+    public String getRecurrenceGroupId() {
+        return recurrenceGroupId;
+    }
+
+    public void setRecurrenceGroupId(String recurrenceGroupId) {
+        this.recurrenceGroupId = recurrenceGroupId;
+    }
+
     public int getCapacity() {
         return capacity;
     }
@@ -107,8 +141,9 @@ public class DepartureSchedule {
                 : "No date assigned";
 
         if (route != null) {
-            return String.format("[%s | %s] %s (Capacity: %d)",
-                    dateText, formattedTime, route.toString(), capacity);
+            String recurringTag = isRecurring ? " [REPEATING group=" + recurrenceGroupId + "]" : "";
+            return String.format("[%s | %s] %s%s (Capacity: %d)",
+                    dateText, formattedTime, route.toString(), recurringTag, capacity);
         }
 
         return String.format("[%s | %s] (Capacity: %d)",
