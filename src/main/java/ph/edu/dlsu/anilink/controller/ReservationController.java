@@ -316,6 +316,10 @@ public class ReservationController {
             Throwable ex = task.getException();
             if (ex instanceof TripFullException) {
                 showJoinWaitlistDialog(currentTrip);
+            } else if (ex instanceof IllegalStateException) {
+                // Show the actual validation message (e.g., "You already have an active booking on...",
+                // "You have reached the maximum allowed limit of 2 active reservations.", etc.)
+                showMessage(ex.getMessage(), "#DC2626");
             } else {
                 if (ex != null) {
                     ex.printStackTrace();

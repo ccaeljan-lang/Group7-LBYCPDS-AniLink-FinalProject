@@ -511,7 +511,8 @@ public class ScheduleManagementController extends AbstractAdminController {
                             return "PARTIAL:"
                                     + created + ":"
                                     + skipped + ":"
-                                    + String.join(",", skippedDates);
+                                    + String.join(",", skippedDates) + ":"
+                                    + groupId;
                         }
 
                         return "SUCCESS:" + created + ":" + groupId;

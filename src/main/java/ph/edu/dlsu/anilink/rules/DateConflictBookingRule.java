@@ -52,6 +52,8 @@ public class DateConflictBookingRule implements BookingRule {
             String json = supabaseService.getActiveReservationsWithTripDetails(passengerId);
             JsonNode array = objectMapper.readTree(json);
 
+            // Count how many active reservations the passenger already has on this date.
+            int bookingsOnDate = 0;
             if (array.isArray()) {
                 for (JsonNode existing : array) {
                     JsonNode existingTrip = existing.path("trip");
@@ -59,11 +61,17 @@ public class DateConflictBookingRule implements BookingRule {
                     String existingDateStr = existingSchedule.path("departure_date").asText(null);
 
                     if (existingDateStr != null && existingDateStr.equals(newDate.toString())) {
-                        errorMessage = "You already have an active booking on "
-                                + existingDateStr + ". Please choose a different date.";
-                        return false;
+                        bookingsOnDate++;
                     }
                 }
+            }
+
+            // Allow up to 2 bookings per day (different routes permitted).
+            // Block only if the passenger already has 2+ bookings on this date.
+            if (bookingsOnDate >= 2) {
+                errorMessage = "You already have 2 active bookings on " + newDate
+                        + ". Please choose a different date.";
+                return false;
             }
 
             return true;

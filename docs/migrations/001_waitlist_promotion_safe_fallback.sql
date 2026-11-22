@@ -105,12 +105,28 @@
 -- CREATE UNIQUE INDEX IF NOT EXISTS idx_reservations_one_active_per_user_trip
 -- ON reservations (passenger_id, trip_id)
 -- WHERE status IN ('CONFIRMED','VERIFIED','BOARDED');
---
+
+-- ----------------------------------------------------------------------------
+-- (C) Add columns for repeating schedule support.
+--     is_recurring marks a schedule as part of a repeating set;
+--     recurrence_group_id links all Mon–Sat instances of the same repeating schedule.
+-- ----------------------------------------------------------------------------
+ALTER TABLE public.departure_schedules
+    ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE public.departure_schedules
+    ADD COLUMN IF NOT EXISTS recurrence_group_id TEXT;
+
 -- ----------------------------------------------------------------------------
 -- ROLLBACK NOTES:
 --   Drop the function and index if they were applied:
 --     DROP FUNCTION IF EXISTS anilink.cancel_and_promote(bigint);
 --     DROP INDEX IF EXISTS idx_reservations_one_active_per_user_trip;
+--
+--   To roll back the repeating-schedule columns:
+--     ALTER TABLE public.departure_schedules
+--         DROP COLUMN IF EXISTS is_recurring,
+--         DROP COLUMN IF EXISTS recurrence_group_id;
 --
 -- SAFETY:
 --   This script performs no DELETEs, no sequence resets, and no primary key

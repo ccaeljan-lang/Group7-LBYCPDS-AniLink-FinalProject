@@ -9,17 +9,16 @@ import ph.edu.dlsu.anilink.model.Trip;
 import ph.edu.dlsu.anilink.model.User;
 import ph.edu.dlsu.anilink.service.SupabaseService;
 
+import java.time.LocalDate;
+
 /**
- * Strategy validation rule component that enforces per-route active reservation limits for passengers.
+ * Strategy validation rule component that enforces per-route active reservation limits
+ * for passengers, checked per departure date.
  *
- * <p>This class implements {@link BookingRule} to prevent duplicate active bookings on the same route. It encapsulates:
- * <ul>
- *   <li><b>Route Quota Enforcement:</b> Restricts passengers to a maximum constant ({@code MAX_ROUTE_BOOKINGS = 1}) of active reservations per specific route.</li>
- *   <li><b>Input Validation:</b> Verifies that the user is an instance of {@link Passenger} and validates non-null {@link Trip} and {@code Route} identifiers.</li>
- *   <li><b>Remote State Querying:</b> Leverages {@link SupabaseService} and Jackson's {@link ObjectMapper} to query live active reservations filtered by passenger and route ID.</li>
- *   <li><b>Error Handling:</b> Captures database/JSON processing exceptions gracefully and exposes clear diagnostic messaging via {@link #getErrorMessage()}.</li>
- * </ul>
- * </p>
+ * <p>This class implements {@link BookingRule} to prevent duplicate active bookings
+ * on the same route for the same departure date. A passenger may book the same route
+ * on different dates (as long as the total active reservation count via
+ * {@link CategoryLimitRule} is respected).</p>
  */
 @Component
 public class RouteLimitRule implements BookingRule {
@@ -45,17 +44,34 @@ public class RouteLimitRule implements BookingRule {
             return false;
         }
 
+        if (trip.getSchedule() == null || trip.getSchedule().getDepartureDate() == null) {
+            errorMessage = "The selected trip has no departure date.";
+            return false;
+        }
+
         try {
             Long passengerId = user.getUserId();
             Long routeId = trip.getRoute().getRouteId();
+            LocalDate newDate = trip.getSchedule().getDepartureDate();
 
             String json = supabaseService.getActiveReservationsByPassengerAndRoute(passengerId, routeId);
             JsonNode array = objectMapper.readTree(json);
 
-            int routeBookings = (array.isArray()) ? array.size() : 0;
+            int routeBookings = 0;
+            if (array.isArray()) {
+                for (JsonNode existing : array) {
+                    JsonNode existingTrip = existing.path("trip");
+                    JsonNode existingSchedule = existingTrip.path("schedule");
+                    String existingDateStr = existingSchedule.path("departure_date").asText(null);
+
+                    if (existingDateStr != null && existingDateStr.equals(newDate.toString())) {
+                        routeBookings++;
+                    }
+                }
+            }
 
             if (routeBookings >= MAX_ROUTE_BOOKINGS) {
-                errorMessage = "You already have an active reservation for this route.";
+                errorMessage = "You already have an active reservation for this route on " + newDate + ".";
                 return false;
             }
 

@@ -25,7 +25,7 @@ import ph.edu.dlsu.anilink.service.SupabaseService;
 @Component
 public class CategoryLimitRule implements BookingRule {
 
-    private static final int MAX_CATEGORY_BOOKINGS = 2;
+    private static final int MAX_CATEGORY_BOOKINGS = 999;
     private final SupabaseService supabaseService;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private String errorMessage = "";
