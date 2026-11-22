@@ -4,6 +4,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
@@ -11,7 +12,6 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<?import javafx.scene.control.ScrollPane?>
 <BorderPane prefHeight="750.0"
             prefWidth="1100.0"
             xmlns="http://javafx.com/javafx/21"
@@ -22,34 +22,59 @@
         <URL value="@../css/main.css" />
     </stylesheets>
 
+    <!-- Top Navigation -->
     <top>
         <HBox alignment="CENTER_LEFT"
               prefHeight="60.0"
               spacing="20.0"
               style="-fx-background-color: #0d5c36; -fx-padding: 10 25;"
               styleClass="top-nav">
+
             <ImageView fitHeight="28.0" preserveRatio="true">
                 <image>
                     <Image url="@../images/nologotitle.png" />
                 </image>
             </ImageView>
+
             <Region HBox.hgrow="ALWAYS" />
-            <Label fx:id="driverNameLabel" style="-fx-text-fill: #F8FAFC; -fx-font-size: 14px; -fx-font-weight: bold;" text="Welcome, Driver" />
-            <Label style="-fx-text-fill: #94A3B8; -fx-font-size: 18px;" text="🚌" />
+
+            <Label fx:id="driverNameLabel"
+                   style="-fx-text-fill: #F8FAFC; -fx-font-size: 14px; -fx-font-weight: bold;"
+                   text="Welcome, Driver" />
+
+            <Label style="-fx-text-fill: #94A3B8; -fx-font-size: 18px;"
+                   text="🚌" />
         </HBox>
     </top>
 
+    <!-- Sidebar -->
     <left>
         <VBox prefWidth="220.0"
               spacing="8.0"
               style="-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-width: 0 1 0 0;"
               styleClass="sidebar-white">
+
             <padding>
                 <Insets bottom="20.0" left="15.0" right="15.0" top="20.0" />
             </padding>
-            <Button onAction="#handleDashboard" prefHeight="40.0" prefWidth="190.0" styleClass="sidebar-btn, sidebar-btn-active" text="Dashboard" />
-            <Button onAction="#handleViewTripDetails" prefHeight="40.0" prefWidth="190.0" styleClass="sidebar-btn" text="Trip Details" />
-            <Button onAction="#handleScanQR" prefHeight="40.0" prefWidth="190.0" styleClass="sidebar-btn" text="Scan QR Code" />
+
+            <Button onAction="#handleDashboard"
+                    prefHeight="40.0"
+                    prefWidth="190.0"
+                    styleClass="sidebar-btn, sidebar-btn-active"
+                    text="Dashboard" />
+
+            <Button onAction="#handleViewTripDetails"
+                    prefHeight="40.0"
+                    prefWidth="190.0"
+                    styleClass="sidebar-btn"
+                    text="Trip Details" />
+
+            <Button onAction="#handleScanQR"
+                    prefHeight="40.0"
+                    prefWidth="190.0"
+                    styleClass="sidebar-btn"
+                    text="Scan QR Code" />
 
             <Region VBox.vgrow="ALWAYS" />
 
@@ -63,59 +88,84 @@
         </VBox>
     </left>
 
+    <!-- Main Content -->
     <center>
-        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
-            <VBox alignment="TOP_CENTER" spacing="20.0" style="-fx-background-color: #F8FAFC;"/>
-<VBox alignment="TOP_CENTER" spacing="25.0" style="-fx-background-color: #F8FAFC;">
-            <padding>
-                <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
-            </padding>
+        <ScrollPane fitToWidth="true"
+                    hbarPolicy="NEVER"
+                    vbarPolicy="AS_NEEDED">
 
-            <VBox alignment="CENTER" spacing="5.0">
-                <Label style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #0F172A;" styleClass="section-title" text="Driver Dashboard" />
-                <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B;" text="Manage current route assignments, monitor capacity, and verify passengers" />
-            </VBox>
+            <content>
+                <VBox alignment="TOP_CENTER"
+                      spacing="25.0"
+                      style="-fx-background-color: #F8FAFC;">
 
-            <VBox maxWidth="550.0"
-                  spacing="20.0"
-                  style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 8, 0, 0, 4);"
-                  styleClass="dashboard-card">
-                <padding>
-                    <Insets bottom="30.0" left="35.0" right="35.0" top="30.0" />
-                </padding>
+                    <padding>
+                        <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
+                    </padding>
 
-                <Label style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #0F172A;" text="Active Shuttle Assignment" />
+                    <!-- Dashboard Header -->
+                    <VBox alignment="CENTER" spacing="5.0">
 
-                <VBox alignment="CENTER"
-                      prefWidth="450.0"
-                      spacing="10.0"
-                      style="-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 20px;">
-                    <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #64748B;" text="CURRENT TRIP STATUS" />
-                    <Label fx:id="currentTripLabel"
-                           style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;"
-                           text="Loading trip information..."
-                           wrapText="true" />
+                        <Label style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #0F172A;"
+                               styleClass="section-title"
+                               text="Driver Dashboard" />
+
+                        <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B;"
+                               text="Manage current route assignments, monitor capacity, and verify passengers" />
+                    </VBox>
+
+                    <!-- Active Shuttle Assignment Card -->
+                    <VBox maxWidth="550.0"
+                          spacing="20.0"
+                          style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.03), 8, 0, 0, 4);"
+                          styleClass="dashboard-card">
+
+                        <padding>
+                            <Insets bottom="30.0" left="35.0" right="35.0" top="30.0" />
+                        </padding>
+
+                        <Label style="-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #0F172A;"
+                               text="Active Shuttle Assignment" />
+
+                        <!-- Current Trip Status -->
+                        <VBox alignment="CENTER"
+                              prefWidth="450.0"
+                              spacing="10.0"
+                              style="-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 20px;">
+
+                            <Label style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #64748B;"
+                                   text="CURRENT TRIP STATUS" />
+
+                            <Label fx:id="currentTripLabel"
+                                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;"
+                                   text="Loading trip information..."
+                                   wrapText="true" />
+                        </VBox>
+
+                        <!-- Action Buttons -->
+                        <HBox alignment="CENTER" spacing="15.0">
+
+                            <Button fx:id="viewTripDetailsButton"
+                                    onAction="#handleViewTripDetails"
+                                    prefHeight="40.0"
+                                    prefWidth="200.0"
+                                    style="-fx-background-color: #0d5c36; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;"
+                                    styleClass="primary-button"
+                                    text="View Trip Details" />
+
+                            <Button fx:id="scanQRButton"
+                                    onAction="#handleScanQR"
+                                    prefHeight="40.0"
+                                    prefWidth="200.0"
+                                    style="-fx-background-color: #334155; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;"
+                                    styleClass="secondary-button"
+                                    text="Scan QR Code" />
+
+                        </HBox>
+                    </VBox>
                 </VBox>
-
-                <HBox alignment="CENTER" spacing="15.0">
-                    <Button fx:id="viewTripDetailsButton"
-                            onAction="#handleViewTripDetails"
-                            prefHeight="40.0"
-                            prefWidth="200.0"
-                            style="-fx-background-color: #0d5c36; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;"
-                            styleClass="primary-button"
-                            text="View Trip Details" />
-                    <Button fx:id="scanQRButton"
-                            onAction="#handleScanQR"
-                            prefHeight="40.0"
-                            prefWidth="200.0"
-                            style="-fx-background-color: #334155; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 6px; -fx-cursor: hand;"
-                            styleClass="secondary-button"
-                            text="Scan QR Code" />
-                </HBox>
-            </VBox>
-        </VBox>
-        </VBox>
-</ScrollPane>
+            </content>
+        </ScrollPane>
     </center>
+
 </BorderPane>
