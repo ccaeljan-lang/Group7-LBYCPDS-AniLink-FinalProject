@@ -64,7 +64,7 @@
                         <Label fx:id="totalUsers" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #15803D;" text="--" />
                     </VBox>
 
-                    <VBox alignment="CENTER" prefHeight="130.0" prefWidth="230.0" spacing="8.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 6, 0, 0, 2);" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <VBox alignment="CENTER" prefHeight="130.0" prefWidth="230.0" spacing="8.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 12px; -fx-border-color: #E2E8F0; -fx-border-radius: 12px; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.02), 6, 0, 0, 2);" GridPane.columnIndex="1" GridPane.rowIndex="0">
                         <Label style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #64748B;" text="TODAY'S TRIPS" />
                         <Label fx:id="todaysTrips" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;" text="--" />
                     </VBox>

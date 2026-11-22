@@ -12,6 +12,10 @@ import ph.edu.dlsu.anilink.model.User;
 import ph.edu.dlsu.anilink.service.SupabaseService;
 import ph.edu.dlsu.anilink.util.UserSession;
 import ph.edu.dlsu.anilink.util.ViewNavigator;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * JavaFX controller for the Administrator Dashboard view.
@@ -62,34 +66,66 @@ public class AdminDashboardController {
                 String reservationsJson = supabaseService.getReservations();
                 int resCount = objectMapper.readTree(reservationsJson).size();
 
-                // 3. Process Trips for multiple metrics
+                // 3. Get Trips and Departure Schedules
                 String tripsJson = supabaseService.getTrips();
                 JsonNode tripsArray = objectMapper.readTree(tripsJson);
 
-                int totalTripsCount = tripsArray.size(); // Simplified to total trips for now
+                String schedulesJson = supabaseService.getSchedules();
+                JsonNode schedulesArray = objectMapper.readTree(schedulesJson);
+
+// Map schedule IDs to their departure dates
+                Map<Long, LocalDate> scheduleDates = new HashMap<>();
+
+                for (JsonNode schedule : schedulesArray) {
+                    long scheduleId = schedule.path("id").asLong();
+
+                    String departureDate = schedule.path("departure_date").asText("");
+
+                    if (!departureDate.isEmpty()) {
+                        scheduleDates.put(scheduleId, LocalDate.parse(departureDate));
+                    }
+                }
+
+// Initialize statistics
+                int todayCount = 0;
                 int activeCount = 0;
                 int availableSeatsCount = 0;
 
+// Get today's date in Philippine time
+                LocalDate today = LocalDate.now(ZoneId.of("Asia/Manila"));
+
+// Process Trips
                 for (JsonNode trip : tripsArray) {
+
                     String status = trip.path("status").asText("");
 
-                    // Count Active Trips (Boarding or In Transit)
+                    // Get the departure date through schedule_id
+                    long scheduleId = trip.path("schedule_id").asLong();
+
+                    LocalDate departureDate = scheduleDates.get(scheduleId);
+
+                    // Count Today's Trips
+                    if (departureDate != null && departureDate.equals(today)) {
+                        todayCount++;
+                    }
+
+                    // Count Active Trips
                     if ("IN_TRANSIT".equals(status) || "BOARDING".equals(status)) {
                         activeCount++;
                     }
 
-                    // Calculate Available Seats (Capacity - Seats Taken)
-                    // Only count for trips that haven't completed or cancelled
+                    // Calculate Available Seats
                     if (!"COMPLETED".equals(status) && !"CANCELLED".equals(status)) {
+
                         int capacity = trip.path("capacity").asInt(0);
                         int seatsTaken = trip.path("seats_taken").asInt(0);
+
                         availableSeatsCount += Math.max(0, capacity - seatsTaken);
                     }
                 }
 
-                // Final Variables for lambda
                 final String fUsers = String.valueOf(usersCount);
-                final String fTrips = String.valueOf(totalTripsCount);
+                final String fToday = String.valueOf(todayCount);
                 final String fSeats = String.valueOf(availableSeatsCount);
                 final String fActive = String.valueOf(activeCount);
                 final String fRes = String.valueOf(resCount);
@@ -97,7 +133,7 @@ public class AdminDashboardController {
                 // Update UI safely on JavaFX thread
                 Platform.runLater(() -> {
                     totalUsers.setText(fUsers);
-                    todaysTrips.setText(fTrips);
+                    todaysTrips.setText(fToday);
                     availableSeats.setText(fSeats);
                     activeTrips.setText(fActive);
                     reservations.setText(fRes);
