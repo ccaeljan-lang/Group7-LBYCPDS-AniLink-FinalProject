@@ -96,7 +96,9 @@
     </left>
 
     <center>
-        <VBox alignment="TOP_CENTER"
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
+            <VBox alignment="TOP_CENTER" spacing="20.0" style="-fx-background-color: #F8FAFC;">
+<VBox alignment="TOP_CENTER"
               spacing="25.0"
               style="-fx-background-color: #F8FAFC;">
 
@@ -239,6 +241,7 @@
                 </VBox>
             </HBox>
         </VBox>
+        </ScrollPane>
     </center>
 
 </BorderPane>

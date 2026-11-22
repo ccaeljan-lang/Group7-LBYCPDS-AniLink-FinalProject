@@ -40,7 +40,8 @@
     </left>
 
     <center>
-        <VBox alignment="TOP_CENTER" spacing="20.0" style="-fx-background-color: #F8FAFC;">
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
+            <VBox alignment="TOP_CENTER" spacing="20.0" style="-fx-background-color: #F8FAFC;">
             <padding><Insets bottom="30.0" left="40.0" right="40.0" top="25.0" /></padding>
 
             <VBox alignment="CENTER" spacing="5.0">
@@ -83,5 +84,6 @@
                 </VBox>
             </HBox>
         </VBox>
+        </ScrollPane>
     </center>
 </BorderPane>

@@ -26,7 +26,8 @@
         </ImageView>
     </VBox>
 
-    <VBox alignment="CENTER" spacing="12" prefWidth="450">
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent;">
+<VBox alignment="CENTER" spacing="12" prefWidth="450">
         <padding>
             <Insets top="30" right="40" bottom="30" left="40"/>
         </padding>
@@ -44,6 +45,7 @@
                 </VBox.margin>
             </Label>
         </VBox>
+</ScrollPane>
 
         <VBox alignment="CENTER_LEFT" maxWidth="350" spacing="4">
             <Label text="Full Name"/>

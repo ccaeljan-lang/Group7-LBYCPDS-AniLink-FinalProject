@@ -53,7 +53,8 @@
     </left>
 
     <center>
-        <VBox alignment="TOP_CENTER" spacing="20.0" style="-fx-background-color: #F8FAFC;">
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
+            <VBox alignment="TOP_CENTER" spacing="20.0" style="-fx-background-color: #F8FAFC;">
             <padding>
                 <Insets bottom="30.0" left="40.0" right="40.0" top="25.0" />
             </padding>
@@ -115,5 +116,6 @@
                 <Label fx:id="reservationMessage" alignment="CENTER" prefWidth="380.0" style="-fx-font-size: 13px; -fx-text-fill: #DC2626; -fx-font-weight: bold;" wrapText="true" />
             </VBox>
         </VBox>
+        </ScrollPane>
     </center>
 </BorderPane>
