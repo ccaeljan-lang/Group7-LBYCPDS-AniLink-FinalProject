@@ -39,6 +39,9 @@ public class PassengerDashboardController {
     @FXML private Label passengerNameLabel;
     @FXML private Label currentTrip;
     @FXML private Label currentStatus;
+    @FXML private Label departureTimeLabel;
+    @FXML private Label tripLabel;
+    @FXML private Label seatLabel;
     @FXML private VBox upcomingReservationBox;
     @FXML private ListView<String> tripsListView;
     @FXML private Button bookTripButton;
@@ -60,6 +63,13 @@ public class PassengerDashboardController {
             loadPassengerReservationsAsync(user.getUserId());
             checkWaitingListPromotion(user.getUserId());
         }
+
+        // Clear any dummy placeholder text until real data loads
+        if (currentTrip != null) currentTrip.setText("");
+        if (currentStatus != null) currentStatus.setText("");
+        if (departureTimeLabel != null) departureTimeLabel.setText("");
+        if (tripLabel != null) tripLabel.setText("");
+        if (seatLabel != null) seatLabel.setText("");
     }
 
     private void loadPassengerReservationsAsync(Long passengerId) {
@@ -95,11 +105,13 @@ public class PassengerDashboardController {
                             final String activeRoute = routeText + " (" + departureTime + ")";
                             final String activeStat = status.toUpperCase();
 
-                            Platform.runLater(() -> {
-                                if (upcomingReservationBox != null) upcomingReservationBox.setVisible(true);
-                                if (currentTrip != null) currentTrip.setText(activeRoute);
-                                if (currentStatus != null) currentStatus.setText(activeStat);
-                            });
+                                Platform.runLater(() -> {
+                                    if (upcomingReservationBox != null) upcomingReservationBox.setVisible(true);
+                                    if (currentTrip != null) currentTrip.setText(activeRoute);
+                                    if (currentStatus != null) currentStatus.setText(activeStat);
+                                    if (departureTimeLabel != null) departureTimeLabel.setText(departureTime);
+                                    if (tripLabel != null) tripLabel.setText(String.valueOf(reservationId));
+                                });
                         }
 
                         // Add to list view
@@ -110,7 +122,9 @@ public class PassengerDashboardController {
 
                 if (!activeFound) {
                     Platform.runLater(() -> {
-                        if (upcomingReservationBox != null) upcomingReservationBox.setVisible(false);
+                        if (upcomingReservationBox != null) upcomingReservationBox.setVisible(true);
+                        if (currentTrip != null) currentTrip.setText("");
+                        if (currentStatus != null) currentStatus.setText("");
                     });
                 }
 

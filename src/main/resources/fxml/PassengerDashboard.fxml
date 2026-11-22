@@ -69,17 +69,17 @@
 
                     <VBox alignment="CENTER" minWidth="90.0" spacing="2.0">
                         <Label style="-fx-text-fill: #64748B; -fx-font-size: 11px; -fx-font-weight: bold;" text="DEPARTURE" />
-                        <Label style="-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #334155;" text="8:00 AM" />
+                        <Label fx:id="departureTimeLabel" style="-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #334155;" text="" />
                     </VBox>
 
                     <VBox alignment="CENTER" minWidth="70.0" spacing="2.0">
                         <Label style="-fx-text-fill: #64748B; -fx-font-size: 11px; -fx-font-weight: bold;" text="TRIP" />
-                        <Label style="-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #334155;" text="Trip B" />
+                        <Label fx:id="tripLabel" style="-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #334155;" text="" />
                     </VBox>
 
                     <VBox alignment="CENTER" minWidth="60.0" spacing="2.0">
                         <Label style="-fx-text-fill: #64748B; -fx-font-size: 11px; -fx-font-weight: bold;" text="SEAT" />
-                        <Label style="-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #0d5c36;" text="7" />
+                        <Label fx:id="seatLabel" style="-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #0d5c36;" text="" />
                     </VBox>
 
                     <VBox alignment="CENTER" minWidth="100.0" spacing="2.0">
