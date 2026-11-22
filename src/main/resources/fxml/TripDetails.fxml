@@ -4,16 +4,18 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.control.ScrollPane?>
 
-<BorderPane prefHeight="750.0" prefWidth="1100.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ph.edu.dlsu.anilink.controller.TripDetailsController">
+<BorderPane prefHeight="750.0" prefWidth="1100.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ph.edu.dlsu.anilink.controller.TripDetailsController">
     <stylesheets><URL value="@../css/main.css" /></stylesheets>
 
     <top>
@@ -51,6 +53,7 @@
                 </VBox>
 
                 <VBox alignment="CENTER_LEFT" spacing="15.0" style="-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 25;">
+                     <DatePicker fx:id="dateSelection" prefWidth="204.0" promptText="Choose a travel date" />
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
                         <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 80px;" text="Trip ID:" />
                         <Label fx:id="tripIdLabel" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;" text="--" />
@@ -62,6 +65,7 @@
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
                         <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 80px;" text="Departure:" />
                         <Label fx:id="scheduleLabel" style="-fx-font-size: 15px; -fx-text-fill: #0d5c36;" text="--" />
+                        <ComboBox fx:id="scheduleSelection" prefWidth="150.0" promptText="Choose a time" />
                     </HBox>
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
                         <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 80px;" text="Capacity:" />

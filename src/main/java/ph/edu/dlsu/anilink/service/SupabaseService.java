@@ -270,7 +270,7 @@ public class SupabaseService {
                 .uri(uriBuilder -> uriBuilder
                         .path("/trips")
                         .queryParam("driver_id", "eq." + driverId)
-                        .queryParam("limit", "1")
+                        //.queryParam("limit", "1")
                         .queryParam("select", "*,route:routes(*),schedule:departure_schedules(*)")
                         .build())
                 .retrieve()

@@ -3,20 +3,24 @@ package ph.edu.dlsu.anilink.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.SortedList;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
 import org.springframework.stereotype.Controller;
+import ph.edu.dlsu.anilink.model.DepartureSchedule;
+import ph.edu.dlsu.anilink.model.Trip;
 import ph.edu.dlsu.anilink.model.User;
 import ph.edu.dlsu.anilink.service.SupabaseService;
 import ph.edu.dlsu.anilink.util.UserSession;
 import ph.edu.dlsu.anilink.util.ViewNavigator;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,8 +57,11 @@ public class TripDetailsController {
     @FXML private Button viewPassengersButton;
     @FXML private Button backButton;
     @FXML private ChoiceBox<String> statusDropdown;
+    @FXML private DatePicker dateSelection;
+    @FXML private ComboBox<String> scheduleSelection;
 
     private Long currentTripId;
+    private List<Trip> assignedTrips;
 
     public TripDetailsController(SupabaseService supabaseService, UserSession userSession, ViewNavigator viewNavigator) {
         this.supabaseService = supabaseService;
@@ -75,20 +82,50 @@ public class TripDetailsController {
         statusDropdown.setValue("N/A");
         messageLabel.setVisible(false);
 
-        loadAssignedTripAsync();
+        dateSelection.setValue(LocalDate.now());
+        setupListeners();
+        loadAssignedTripsAsync(LocalDate.now());
     }
 
     private void setupListeners() {
-        // Setup status dropdown listener
+        // When date changes, load assigned trips
+        dateSelection.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                resetLabels();
+                scheduleSelection.setValue(null);
+                messageLabel.setVisible(false);
+                loadAssignedTripsAsync(newVal);
+            }
+        });
+
+        // When schedule changes, load trip details
+        scheduleSelection.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                for (Trip trip : assignedTrips) {
+                    if (LocalTime.parse(newVal).equals(trip.getSchedule().getDepartureTime())) {
+                        resetLabels();
+                        messageLabel.setVisible(false);
+                        loadTripDetailsAsync(trip.getTripId());
+                        break;
+                    }
+                }
+            }
+        });
+
+        // When status changes, update it in Supabase if it is valid
         statusDropdown.valueProperty().addListener((obs, oldVal, newVal) -> {
             String internalStatus = newVal.replace(" ", "_");
             updateStatusDropdown(internalStatus);
 
-            // Update trip status and passengers status
-            supabaseService.updateTripStatus(currentTripId, internalStatus.toUpperCase());
-            updatePassengersStatus(internalStatus.toUpperCase());
+            // Update trip status and passengers status (except N/A)
+            if (oldVal != null && !newVal.isBlank() && !newVal.equals("N/A")) {
+                supabaseService.updateTripStatus(currentTripId, internalStatus.toUpperCase());
+                updatePassengersStatus(internalStatus.toUpperCase());
 
-            showMessage("Updated status from " + oldVal + " to " + newVal + ".", "#15803D");
+                if (!oldVal.equals("N/A")) {
+                    showMessage("Updated status from " + oldVal + " to " + newVal + ".", "#15803D");
+                }
+            }
         });
     }
 
@@ -116,8 +153,10 @@ public class TripDetailsController {
         };
 
         task.setOnSucceeded(e -> {
-            for (long id : task.getValue()) {
-                supabaseService.updateReservationStatus(id, status);
+            if (task.getValue() != null) {
+                for (long id : task.getValue()) {
+                    supabaseService.updateReservationStatus(id, status);
+                }
             }
         });
 
@@ -134,32 +173,60 @@ public class TripDetailsController {
         loadTripDetailsAsync(tripId);
     }
 
-    private void loadAssignedTripAsync() {
+    private void loadAssignedTripsAsync(LocalDate date) {
         User user = userSession.getCurrentUser();
         if (user == null) {
             resetLabels();
             return;
         }
+        assignedTrips = new ArrayList<>();
 
-        Task<Long> task = new Task<>() {
+        Task<ObservableList<String>> task = new Task<>() {
             @Override
-            protected Long call() throws Exception {
+            protected ObservableList<String> call() throws Exception {
+                String dateStr = date != null ? date.toString() : null;
                 String json = supabaseService.getTripsByDriver(user.getUserId());
                 JsonNode trips = objectMapper.readTree(json);
 
                 if (trips.isArray() && !trips.isEmpty()) {
-                    return trips.get(0).path("id").asLong();
+                    ObservableList<String> departureTimes = FXCollections.observableArrayList();
+
+                    for (JsonNode trip : trips) {
+                        long id = trip.path("id").asLong();
+                        String status = trip.path("status").asText("N/A");
+
+                        JsonNode tripSchedule = trip.path("schedule");
+                        String schedDate = tripSchedule.path("departure_date").asText("N/A");
+                        String time = tripSchedule.path("departure_time").asText("N/A");
+
+                        if (schedDate.equals(dateStr)) {
+                            Trip tripObj = new Trip();
+                            tripObj.setTripId(id);
+                            tripObj.setStatus(status);
+
+                            DepartureSchedule ds = new DepartureSchedule();
+                            ds.setDepartureDate(LocalDate.parse(schedDate));
+                            ds.setDepartureTime(LocalTime.parse(time));
+                            tripObj.setSchedule(ds);
+
+                            assignedTrips.add(tripObj);
+                            departureTimes.add(time);
+                        }
+                    }
+                    return departureTimes;
                 }
                 return null;
             }
         };
 
         task.setOnSucceeded(e -> {
-            Long tripId = task.getValue();
-            if (tripId != null) {
-                setTripId(tripId);
+            // Setup departure dropdown items and initial value
+            if (task.getValue() != null && !task.getValue().isEmpty()) {
+                SortedList<String> sortedTimes = task.getValue().sorted();
+                scheduleSelection.setItems(sortedTimes);
+                scheduleSelection.setValue(sortedTimes.getFirst());
             } else {
-                resetLabels();
+                showMessage("No assigned trips on this date.", "#DC2626");
             }
         });
 
@@ -210,8 +277,6 @@ public class TripDetailsController {
                 statusDropdown.setValue(status.replace("_", " "));
                 updateStatusDropdown(status);
                 viewPassengersButton.setDisable(false);
-
-                setupListeners();
             } else {
                 resetLabels();
             }
