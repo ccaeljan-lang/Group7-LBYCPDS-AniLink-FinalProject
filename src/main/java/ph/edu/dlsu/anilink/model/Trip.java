@@ -48,6 +48,10 @@ public class Trip implements Trackable {
     @JsonProperty("driver")
     private Driver driver;
 
+    // This is the driver_id saved in the trips table in Supabase.
+    @JsonProperty("driver_id")
+    private Long driverId;
+
     @JsonProperty("capacity")
     private int capacity;
 
@@ -148,6 +152,14 @@ public class Trip implements Trackable {
         this.driver = driver;
     }
 
+    public Long getDriverId() {
+        return driverId;
+    }
+
+    public void setDriverId(Long driverId) {
+        this.driverId = driverId;
+    }
+
     public int getCapacity() {
         return capacity;
     }
@@ -219,8 +231,8 @@ public class Trip implements Trackable {
         String departureInfo = (schedule != null && schedule.getDepartureDate() != null)
                 ? schedule.getDepartureDate().toString() + " " +
                   (schedule.getDepartureTime() != null
-                          ? schedule.getDepartureTime().toString()
-                          : "")
+                   ? schedule.getDepartureTime().toString()
+                   : "")
                 : "No date/time";
 
         return String.format("TRIP #%d | %s | %s | %s | Seats: %d/%d | [%s]",

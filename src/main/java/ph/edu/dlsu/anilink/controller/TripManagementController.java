@@ -20,7 +20,9 @@ import ph.edu.dlsu.anilink.service.SupabaseService;
 import ph.edu.dlsu.anilink.util.UserSession;
 import ph.edu.dlsu.anilink.util.ViewNavigator;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * JavaFX controller for the Trip Management view.
@@ -50,6 +52,8 @@ public class TripManagementController extends AbstractAdminController {
     private final ObjectMapper objectMapper;
 
     private final ObservableList<Trip> trips = FXCollections.observableArrayList();
+    // Driver IDs in trips are matched with names fetched from the users table.
+    private final Map<Long, String> driverNames = new HashMap<>();
     private final ObservableList<String> statuses = FXCollections.observableArrayList(
             "SCHEDULED", "ARRIVING", "BOARDING", "IN TRANSIT", "COMPLETED", "CANCELLED"
     );
@@ -75,6 +79,7 @@ public class TripManagementController extends AbstractAdminController {
         }
 
         tripListView.setItems(trips);
+        setupTripListView();
 
         statusComboBox.setItems(statuses);
         statusComboBox.setValue("SCHEDULED");
@@ -110,6 +115,59 @@ public class TripManagementController extends AbstractAdminController {
 
         driverComboBox.setConverter(driverConverter);
         updateDriverComboBox.setConverter(driverConverter);
+    }
+
+    // Show each trip on two lines so the new details do not get cut off.
+    private void setupTripListView() {
+        tripListView.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(Trip trip, boolean empty) {
+                super.updateItem(trip, empty);
+
+                if (empty || trip == null) {
+                    setText(null);
+                    return;
+                }
+
+                String routeText = trip.getRoute() != null
+                        ? trip.getRoute().getOrigin() + " ↔ " + trip.getRoute().getDestination()
+                        : "Unknown Route";
+
+                String departureText = "No date/time";
+                if (trip.getSchedule() != null && trip.getSchedule().getDepartureDate() != null) {
+                    departureText = trip.getSchedule().getDepartureDate().toString();
+                    if (trip.getSchedule().getDepartureTime() != null) {
+                        departureText += " " + trip.getSchedule().getDepartureTime();
+                    }
+                }
+
+                String driverName = "Unassigned";
+                if (trip.getDriverId() != null) {
+                    driverName = driverNames.getOrDefault(
+                            trip.getDriverId(), "Driver #" + trip.getDriverId()
+                    );
+                }
+
+                String vehicleType = trip.getVehicleType() != null
+                        && !trip.getVehicleType().isBlank()
+                        ? trip.getVehicleType() : "N/A";
+
+                String currentStatus = trip.getStatus() != null
+                        ? trip.getStatus() : "SCHEDULED";
+
+                String line1 = "TRIP #" + trip.getTripId()
+                        + " | " + routeText + " | " + departureText;
+
+                String line2 = "Driver: " + driverName
+                        + " | Vehicle: " + vehicleType
+                        + " | Seats: " + trip.getSeatsTaken() + "/" + trip.getCapacity()
+                        + " | [" + currentStatus + "]";
+
+                setText(line1 + "\n" + line2);
+                setWrapText(true);
+                setStyle("-fx-padding: 8 10 8 10;");
+            }
+        });
     }
 
     @FXML
@@ -493,6 +551,15 @@ public class TripManagementController extends AbstractAdminController {
 
             driverComboBox.getItems().setAll(driversList);
             updateDriverComboBox.getItems().setAll(driversList);
+
+            // Updates the list even if trips finished loading before drivers.
+            driverNames.clear();
+            for (User driver : driversList) {
+                if (driver != null && driver.getUserId() != null) {
+                    driverNames.put(driver.getUserId(), driver.getName());
+                }
+            }
+            tripListView.refresh();
         });
 
         task.setOnFailed(e ->
