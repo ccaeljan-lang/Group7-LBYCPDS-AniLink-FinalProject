@@ -62,6 +62,7 @@ public class TripDetailsController {
     @FXML private ComboBox<String> scheduleSelection;
 
     private Long currentTripId;
+    private String currentDepartureTime;
     private AniLinkHashMap<LocalTime, Trip> assignedTrips;
 
     public TripDetailsController(SupabaseService supabaseService, UserSession userSession, ViewNavigator viewNavigator) {
@@ -77,9 +78,6 @@ public class TripDetailsController {
         if (user != null && driverNameLabel != null) {
             driverNameLabel.setText("Welcome, " + user.getName());
         }
-
-        Node label = scheduleSelection.lookup(".label");
-        if (label != null) label.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #0d5c36");
 
         // Setup status dropdown items
         statusDropdown.getItems().addAll("SCHEDULED", "BOARDING", "IN TRANSIT", "COMPLETED");
@@ -98,6 +96,7 @@ public class TripDetailsController {
             if (newVal != null) {
                 resetLabels();
                 scheduleSelection.setValue(null);
+                currentDepartureTime = null;
                 messageLabel.setVisible(false);
                 loadAssignedTripsAsync(newVal);
             }
@@ -109,6 +108,7 @@ public class TripDetailsController {
                 Trip trip = assignedTrips.get(LocalTime.parse(newVal));
                 if (trip != null) {
                     resetLabels();
+                    currentDepartureTime = newVal;
                     messageLabel.setVisible(false);
                     loadTripDetailsAsync(trip.getTripId());
                 }
@@ -171,9 +171,10 @@ public class TripDetailsController {
         new Thread(task).start();
     }
 
-    public void setTripId(Long tripId) {
+    public void setActiveTrip(Long tripId, LocalDate departureDate, String departureTime) {
         this.currentTripId = tripId;
-        loadTripDetailsAsync(tripId);
+        dateSelection.setValue(departureDate); // Triggers the trips loading sequence
+        currentDepartureTime = departureTime; // Used after assigned trips are loaded
     }
 
     private void loadAssignedTripsAsync(LocalDate date) {
@@ -227,7 +228,13 @@ public class TripDetailsController {
             if (task.getValue() != null && !task.getValue().isEmpty()) {
                 SortedList<String> sortedTimes = task.getValue().sorted();
                 scheduleSelection.setItems(sortedTimes);
-                scheduleSelection.setValue(sortedTimes.getFirst());
+
+                if (currentDepartureTime == null) {
+                    scheduleSelection.setValue(sortedTimes.getFirst());
+                } else {
+                    // When coming back from the Passenger List scene
+                    scheduleSelection.setValue(currentDepartureTime);
+                }
             } else {
                 showMessage("No assigned trips on this date.", "#DC2626");
             }
@@ -365,7 +372,7 @@ public class TripDetailsController {
         );
 
         if (controller != null) {
-            controller.setTripId(currentTripId);
+            controller.setActiveTrip(currentTripId, dateSelection.getValue(), scheduleSelection.getValue());
         }
     }
 

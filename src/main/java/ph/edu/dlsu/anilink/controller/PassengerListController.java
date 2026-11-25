@@ -16,6 +16,8 @@ import ph.edu.dlsu.anilink.service.SupabaseService;
 import ph.edu.dlsu.anilink.util.UserSession;
 import ph.edu.dlsu.anilink.util.ViewNavigator;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +42,8 @@ public class PassengerListController {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private Long activeTripId;
+    private LocalDate activeDepartureDate;
+    private String activeDepartureTime;
 
     @FXML private Label driverNameLabel;
     @FXML private Label tripInfoLabel;
@@ -77,15 +81,20 @@ public class PassengerListController {
     }
 
     /**
-     * Sets the target trip ID and triggers loading of reserved passengers.
+     * Sets the target trip and triggers loading of reserved passengers.
      *
      * @param tripId unique ID of the selected trip
+     * @param departureDate date of departure of the selected trip
+     * @param departureTime time of departure of the selected trip
      */
-    public void setTripId(Long tripId) {
+    public void setActiveTrip(Long tripId, LocalDate departureDate, String departureTime) {
         this.activeTripId = tripId;
         if (tripInfoLabel != null) {
             tripInfoLabel.setText("Passenger Manifest — Trip #" + tripId);
         }
+        // Used when passing control back to the Trip Details scene
+        this.activeDepartureDate = departureDate;
+        this.activeDepartureTime = departureTime;
         loadPassengersForTripAsync(tripId);
     }
 
@@ -202,7 +211,12 @@ public class PassengerListController {
      */
     @FXML
     private void handleBack(ActionEvent event) {
-        viewNavigator.navigateTo(event, "/fxml/TripDetails.fxml", 1000, 650);
+        TripDetailsController controller = viewNavigator.navigateToAndGetController(
+                event, "/fxml/TripDetails.fxml", 1000, 650);
+
+        if (controller != null) {
+            controller.setActiveTrip(activeTripId, activeDepartureDate, activeDepartureTime);
+        }
     }
 
     /**
