@@ -12,6 +12,7 @@ import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import org.springframework.stereotype.Controller;
+import ph.edu.dlsu.anilink.dsa.AniLinkHashMap;
 import ph.edu.dlsu.anilink.model.DepartureSchedule;
 import ph.edu.dlsu.anilink.model.Trip;
 import ph.edu.dlsu.anilink.model.User;
@@ -51,6 +52,7 @@ public class TripDetailsController {
     @FXML private Label driverNameLabel;
     @FXML private Label tripIdLabel;
     @FXML private Label routeLabel;
+    @FXML private Label vehicleTypeLabel;
     @FXML private Label capacityLabel;
     @FXML private Label messageLabel;
     @FXML private Button viewPassengersButton;
@@ -60,7 +62,7 @@ public class TripDetailsController {
     @FXML private ComboBox<String> scheduleSelection;
 
     private Long currentTripId;
-    private List<Trip> assignedTrips;
+    private AniLinkHashMap<LocalTime, Trip> assignedTrips;
 
     public TripDetailsController(SupabaseService supabaseService, UserSession userSession, ViewNavigator viewNavigator) {
         this.supabaseService = supabaseService;
@@ -76,11 +78,15 @@ public class TripDetailsController {
             driverNameLabel.setText("Welcome, " + user.getName());
         }
 
+        Node label = scheduleSelection.lookup(".label");
+        if (label != null) label.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #0d5c36");
+
         // Setup status dropdown items
         statusDropdown.getItems().addAll("SCHEDULED", "BOARDING", "IN TRANSIT", "COMPLETED");
         statusDropdown.setValue("N/A");
         messageLabel.setVisible(false);
 
+        // Automatic loading
         dateSelection.setValue(LocalDate.now());
         setupListeners();
         loadAssignedTripsAsync(LocalDate.now());
@@ -100,13 +106,11 @@ public class TripDetailsController {
         // When schedule changes, load trip details
         scheduleSelection.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
-                for (Trip trip : assignedTrips) {
-                    if (LocalTime.parse(newVal).equals(trip.getSchedule().getDepartureTime())) {
-                        resetLabels();
-                        messageLabel.setVisible(false);
-                        loadTripDetailsAsync(trip.getTripId());
-                        break;
-                    }
+                Trip trip = assignedTrips.get(LocalTime.parse(newVal));
+                if (trip != null) {
+                    resetLabels();
+                    messageLabel.setVisible(false);
+                    loadTripDetailsAsync(trip.getTripId());
                 }
             }
         });
@@ -178,7 +182,7 @@ public class TripDetailsController {
             resetLabels();
             return;
         }
-        assignedTrips = new ArrayList<>();
+        assignedTrips = new AniLinkHashMap<>();
 
         Task<ObservableList<String>> task = new Task<>() {
             @Override
@@ -208,7 +212,7 @@ public class TripDetailsController {
                             ds.setDepartureTime(LocalTime.parse(time));
                             tripObj.setSchedule(ds);
 
-                            assignedTrips.add(tripObj);
+                            assignedTrips.put(LocalTime.parse(time), tripObj);
                             departureTimes.add(time);
                         }
                     }
@@ -258,18 +262,16 @@ public class TripDetailsController {
                 String status = trip.path("status").asText("SCHEDULED");
                 int capacity = trip.path("capacity").asInt(0);
                 int seatsTaken = trip.path("seats_taken").asInt(0);
+                String vehicleType = trip.path("vehicle_type").asText("Unknown");
 
                 // Resilient lookup: check alias "route" first, fallback to "routes"
                 JsonNode route = trip.has("route") ? trip.path("route") : trip.path("routes");
                 String origin = route.path("origin").asText("Unknown");
                 String destination = route.path("destination").asText("Unknown");
 
-                // Resilient lookup: check alias "schedule" first, fallback to "departure_schedules"
-                JsonNode schedule = trip.has("schedule") ? trip.path("schedule") : trip.path("departure_schedules");
-                String departureTime = schedule.path("departure_time").asText("N/A");
-
                 tripIdLabel.setText("#" + currentTripId);
                 routeLabel.setText(origin + " ↔ " + destination);
+                vehicleTypeLabel.setText(vehicleType);
                 capacityLabel.setText(String.format("%d / %d", seatsTaken, capacity));
 
                 statusDropdown.setValue(status.replace("_", " "));
@@ -322,6 +324,7 @@ public class TripDetailsController {
         Platform.runLater(() -> {
             tripIdLabel.setText("--");
             routeLabel.setText("No active trip");
+            vehicleTypeLabel.setText("--");
             capacityLabel.setText("0 / 0");
             statusDropdown.setValue("N/A");
             viewPassengersButton.setDisable(true);

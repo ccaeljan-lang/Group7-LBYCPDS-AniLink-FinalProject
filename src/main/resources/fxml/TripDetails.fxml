@@ -53,25 +53,40 @@
                 </VBox>
 
                 <VBox alignment="CENTER_LEFT" spacing="15.0" style="-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 25;">
-                     <DatePicker fx:id="dateSelection" prefWidth="204.0" promptText="Choose a travel date" />
+                     <HBox spacing="10.0">
+                        <children>
+                           <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 90px;" text="Date:">
+                              <HBox.margin>
+                                 <Insets />
+                              </HBox.margin>
+                           </Label>
+                           <DatePicker fx:id="dateSelection" prefWidth="204.0" promptText="Choose a travel date" style="-fx-font-weight: bold;" />
+                        </children>
+                     </HBox>
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
-                        <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 80px;" text="Trip ID:" />
+                        <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 90px;" text="Trip ID:" />
                         <Label fx:id="tripIdLabel" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #0d5c36;" text="--" />
                     </HBox>
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
-                        <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 80px;" text="Route:" />
+                        <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 90px;" text="Route:" />
                         <Label fx:id="routeLabel" style="-fx-font-size: 15px; -fx-text-fill: #0d5c36; -fx-font-weight: bold;" text="No active trip" wrapText="true" />
                     </HBox>
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
-                        <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 80px;" text="Departure:" />
-                        <ComboBox fx:id="scheduleSelection" prefWidth="150.0" promptText="Choose a time" />
+                        <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 90px;" text="Departure:" />
+                        <ComboBox fx:id="scheduleSelection" prefHeight="29.0" prefWidth="157.0" promptText="Choose a time" style="-fx-font-size: 15; -fx-font-weight: bold; -fx-background-radius: 12; -fx-background-color: #E2E8F0; -fx-text-fill: #0D5C36;" />
                     </HBox>
+                     <HBox alignment="CENTER_LEFT" layoutX="36.0" layoutY="203.0" spacing="10.0">
+                        <children>
+                           <Label prefHeight="18.0" prefWidth="119.0" style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 90px;" text="Vehicle Type:" />
+                           <Label fx:id="vehicleTypeLabel" style="-fx-font-size: 15px; -fx-text-fill: #0d5c36;" text="--" />
+                        </children>
+                     </HBox>
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
-                        <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 80px;" text="Capacity:" />
+                        <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 90px;" text="Capacity:" />
                         <Label fx:id="capacityLabel" style="-fx-font-size: 15px; -fx-text-fill: #0d5c36;" text="0 / 0" />
                     </HBox>
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
-                        <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 80px;" text="Status:" />
+                        <Label style="-fx-font-size: 14px; -fx-text-fill: #64748B; -fx-pref-width: 90px;" text="Status:" />
                   <ChoiceBox fx:id="statusDropdown" prefWidth="150.0" style="-fx-font-size: 12; -fx-font-weight: bold; -fx-background-radius: 12; -fx-background-color: #E2E8F0; -fx-text-fill: #475569;" />
                     </HBox>
                <Label fx:id="messageLabel" style="-fx-font-size: 14px; -fx-text-fill: #64748B;" text="Message" />
